@@ -6,7 +6,7 @@ Do not paste every historical run here. The final version should include only se
 
 - dense LLaMEA baseline summary;
 - candidate-restricted LLaMEA summary;
-- POPMUSIC prior ablation summary;
+- POPMUSIC-prior summary;
 - selected train/validation/test gaps;
 - representative failure modes.
 

@@ -209,3 +209,111 @@ def print_effective_config(effective: dict[str, Any]) -> None:
     for split, names in suite.get("splits", {}).items():
         print(f"  {split}: {names}")
     print("-" * 80)
+
+
+def selected_instance_names(effective: dict[str, Any]) -> list[str]:
+    """Return the TSP instance names selected by ``runtime.eval_split``.
+
+    This helper is used by the Colab launcher before the backend pipeline is
+    executed. It mirrors the split-selection logic used by the backend scripts
+    but keeps the notebook cell short and robust.
+    
+    Supported values are:
+    - ``train``: training split only
+    - ``val``: validation split only
+    - ``test``: final test split only
+    - ``all``: train + val + test, preserving order and removing duplicates
+    """
+    runtime = effective.get("runtime", {})
+    suite = effective.get("suite", {})
+    split = str(runtime.get("eval_split", "train")).strip().lower()
+    splits = suite.get("splits", {}) or {}
+
+    if split == "all":
+        names: list[str] = []
+        seen: set[str] = set()
+        for key in ("train", "val", "test"):
+            for name in splits.get(key, []) or []:
+                if name not in seen:
+                    names.append(str(name))
+                    seen.add(str(name))
+        # Include any extra split keys at the end, in case a user extends the config.
+        for key, values in splits.items():
+            if key in {"train", "val", "test"}:
+                continue
+            for name in values or []:
+                if name not in seen:
+                    names.append(str(name))
+                    seen.add(str(name))
+        return names
+
+    if split not in splits:
+        raise ValueError(
+            f"Unknown EVAL_SPLIT {split!r}. Expected one of {sorted(splits.keys()) + ['all']}."
+        )
+    return [str(name) for name in (splits.get(split, []) or [])]
+
+
+def tsplib_file_candidates(instance_name: str, instance_root: str | Path) -> list[Path]:
+    """Possible TSPLIB file locations for one instance.
+
+    The project stores raw TSPLIB files outside git, usually in Drive. This
+    accepts both flat folders and one-subfolder-per-instance layouts.
+    """
+    root = Path(instance_root)
+    name = str(instance_name)
+    variants = [name, name.upper(), name.lower()]
+    paths: list[Path] = []
+    for stem in variants:
+        paths.extend([
+            root / f"{stem}.tsp",
+            root / f"{stem}.TSP",
+            root / stem / f"{stem}.tsp",
+            root / stem / f"{stem}.TSP",
+        ])
+    # Deduplicate while preserving order.
+    out: list[Path] = []
+    seen: set[str] = set()
+    for path in paths:
+        key = str(path)
+        if key not in seen:
+            out.append(path)
+            seen.add(key)
+    return out
+
+
+def candidate_file_candidates(instance_name: str, candidate_root: str | Path) -> list[Path]:
+    """Possible POPMUSIC/LKH candidate-cache file locations for one instance.
+
+    Historical notebooks used slightly different suffixes while experimenting
+    with LKH/POPMUSIC. The launcher checks a permissive set of names so the
+    user does not have to rename an existing cache unnecessarily.
+    """
+    root = Path(candidate_root)
+    name = str(instance_name)
+    variants = [name, name.upper(), name.lower()]
+    suffixes = [
+        ".cand",
+        ".candidates",
+        "_candidates.txt",
+        "_candidates.csv",
+        "_popmusic_candidates.txt",
+        "_popmusic.cand",
+        ".popmusic",
+        ".txt",
+    ]
+    paths: list[Path] = []
+    for stem in variants:
+        for suffix in suffixes:
+            paths.append(root / f"{stem}{suffix}")
+        # Also accept candidate files inside a per-instance directory.
+        for suffix in suffixes:
+            paths.append(root / stem / f"{stem}{suffix}")
+    out: list[Path] = []
+    seen: set[str] = set()
+    for path in paths:
+        key = str(path)
+        if key not in seen:
+            out.append(path)
+            seen.add(key)
+    return out
