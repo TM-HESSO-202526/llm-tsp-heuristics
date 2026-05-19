@@ -21,6 +21,15 @@ def reject_forbidden_code(code: str) -> None:
         "urllib",
         "eval(",
         "exec(",
+        "__import__('os'",
+        '__import__("os"',
+        "sklearn",
+        "scipy",
+        "networkx",
+        "ortools",
+        "tsplib",
+        "lkh",
+        "concorde",
     ]
     lowered = code.lower()
     for token in forbidden:

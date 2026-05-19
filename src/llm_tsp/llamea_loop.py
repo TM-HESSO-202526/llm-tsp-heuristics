@@ -232,6 +232,7 @@ def run_llamea_search(
         prompt_path.parent.mkdir(parents=True, exist_ok=True)
         prompt_path.write_text(prompt, encoding="utf-8")
 
+        print(f"\n[LLM attempt {attempt}/{max_calls}] strategy={strategy} prompt_mode={prompt_mode} parent={parent.attempt if parent else None}", flush=True)
         raw = llm_call([
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": prompt},
@@ -262,6 +263,7 @@ def run_llamea_search(
                 raw_response_path=str(raw_path),
             )
             records.append(rec)
+            print(_record_line(rec), flush=True)
             previous_feedback = make_feedback(rec, code=code, include_trace=include_trace, include_invalid_code=include_invalid_code, hide_invalid_code=hide_invalid_code)
             previous_feedback_code = code
             previous_trace = None
@@ -282,6 +284,7 @@ def run_llamea_search(
                     pop_cfg.get("allow_non_candidate_edges_in_final_tour", True) is False
                     and pop_cfg.get("restrict_edge_cost_to_candidates", False)
                 ),
+                timeout_s=float(runtime_cfg.get("evaluation_timeout_s", 0) or 0),
             )
             eval_results.append(res)
             if res.traceback:
@@ -309,6 +312,7 @@ def run_llamea_search(
             raw_response_path=str(raw_path),
         )
         records.append(rec)
+        print(_record_line(rec), flush=True)
 
         with (artifact_dir / "candidates.jsonl").open("a", encoding="utf-8") as f:
             f.write(json.dumps(asdict(rec), ensure_ascii=False) + "\n")

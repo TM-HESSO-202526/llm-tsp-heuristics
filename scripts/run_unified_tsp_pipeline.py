@@ -15,11 +15,19 @@ if str(SRC) not in sys.path:
 
 from llm_tsp.config import load_run_config, flatten_runtime_config
 from llm_tsp.artifacts import make_run_dir, save_json
-from llm_tsp.distance import euclidean_matrix, tour_cost_from_matrix
+from llm_tsp.distance import euclidean_matrix, tsplib_distance_matrix, tour_cost_from_matrix
 from llm_tsp.sparse_problem import SparseTSPProblem
-from llm_tsp.candidate_sets import k_nearest_candidates
+from llm_tsp.candidate_sets import (
+    k_nearest_candidates,
+    parse_simple_candidate_file,
+    prior_from_candidate_frequency,
+)
+from llm_tsp.priors import transform_prior
 from llm_tsp.baselines import nearest_neighbor, prior_greedy
-from llm_tsp.suite import specs_from_suite_config, filter_specs
+from llm_tsp.suite import specs_from_suite_config, filter_specs, InstanceSpec
+from llm_tsp.tsplib_io import read_tsplib_coords
+from llm_tsp.llm_client import call_groq_chat
+from llm_tsp.llamea_loop import run_llamea_search
 
 
 def make_toy_problem(n: int = 100, seed: int = 0, use_candidates: bool = False, max_k: int = 20) -> SparseTSPProblem:
@@ -27,7 +35,14 @@ def make_toy_problem(n: int = 100, seed: int = 0, use_candidates: bool = False, 
     coords = rng.random((n, 2)) * 1000.0
     dist = euclidean_matrix(coords)
     cands = k_nearest_candidates(dist, max_k=max_k) if use_candidates else None
-    return SparseTSPProblem(coords=coords, dist=dist, candidate_neighbors=cands, restrict_edge_cost_to_candidates=False)
+    prior = prior_from_candidate_frequency([cands], n=n) if cands else None
+    return SparseTSPProblem(
+        coords=coords,
+        dist=dist,
+        candidate_neighbors=cands,
+        prior_map=prior,
+        restrict_edge_cost_to_candidates=False,
+    )
 
 
 def run_dry_smoke(cfg: dict, artifact_dir: Path) -> None:
@@ -70,19 +85,29 @@ def tsplib_paths_for_instance(instance_name: str, root: Path) -> list[Path]:
     ]
 
 
-def select_existing(paths: list[Path]) -> str:
+def select_existing_path(paths: list[Path]) -> Path | None:
     for p in paths:
         if p.exists():
-            return str(p)
-    return ""
+            return p
+    return None
+
+
+def select_existing(paths: list[Path]) -> str:
+    p = select_existing_path(paths)
+    return "" if p is None else str(p)
+
+
+def selected_specs(cfg: dict, eval_split: str) -> list[InstanceSpec]:
+    suite = cfg.get("suite", {})
+    specs = specs_from_suite_config(suite)
+    return specs if eval_split == "all" else filter_specs(specs, split=eval_split)
 
 
 def write_selected_instances(cfg: dict, artifact_dir: Path, eval_split: str) -> pd.DataFrame:
     suite = cfg.get("suite", {})
     instance_root = Path(suite.get("instance_root", ""))
     candidate_root = Path(suite.get("candidate_cache_dir", ""))
-    specs = specs_from_suite_config(suite)
-    selected = specs if eval_split == "all" else filter_specs(specs, split=eval_split)
+    selected = selected_specs(cfg, eval_split)
     rows = []
     for spec in selected:
         tsplib_candidates = tsplib_paths_for_instance(spec.name, instance_root)
@@ -99,6 +124,112 @@ def write_selected_instances(cfg: dict, artifact_dir: Path, eval_split: str) -> 
     df = pd.DataFrame(rows)
     df.to_csv(artifact_dir / "selected_instances.csv", index=False)
     return df
+
+
+def load_problem_for_spec(cfg: dict, spec: InstanceSpec, artifact_dir: Path) -> tuple[str, SparseTSPProblem, float | None]:
+    suite = cfg.get("suite", {})
+    pop = cfg.get("popmusic", {})
+    runtime = cfg.get("runtime", {})
+
+    instance_root = Path(suite.get("instance_root", ""))
+    candidate_root = Path(suite.get("candidate_cache_dir", ""))
+
+    tsp_path = select_existing_path(tsplib_paths_for_instance(spec.name, instance_root))
+    if tsp_path is None:
+        raise FileNotFoundError(f"Missing TSPLIB file for {spec.name} under {instance_root}")
+
+    coords, meta = read_tsplib_coords(tsp_path)
+    dist = tsplib_distance_matrix(coords, meta.get("EDGE_WEIGHT_TYPE"))
+    n = int(dist.shape[0])
+    max_k = int(pop.get("max_candidates", 20))
+    use_candidates = bool(pop.get("use_popmusic_candidates", False))
+    use_prior = bool(pop.get("use_popmusic_edge_prior", False))
+
+    candidate_map = None
+    raw_prior = {}
+    candidate_source = "none"
+
+    if use_candidates or use_prior:
+        cand_path = select_existing_path(candidate_paths_for_instance(spec.name, candidate_root))
+        if cand_path is not None:
+            try:
+                candidate_map = parse_simple_candidate_file(cand_path, n=n)
+                candidate_source = str(cand_path)
+            except Exception as e:
+                print(f"[warning] Could not parse candidate file for {spec.name}: {e}. Falling back to kNN candidates.")
+                candidate_map = k_nearest_candidates(dist, max_k=max_k)
+                candidate_source = "knn_fallback_parse_error"
+        else:
+            print(f"[warning] No POPMUSIC candidate file found for {spec.name}. Falling back to kNN-{max_k} candidates.")
+            candidate_map = k_nearest_candidates(dist, max_k=max_k)
+            candidate_source = "knn_fallback_missing_file"
+
+        raw_prior = prior_from_candidate_frequency([candidate_map], n=n)
+
+    prior_map = None
+    if use_prior:
+        prior_map = transform_prior(
+            raw_prior,
+            mode=str(pop.get("prior_mode", "frequency")),
+            n=n,
+            seed=int(runtime.get("global_seed", 0)),
+        )
+
+    problem = SparseTSPProblem(
+        coords=coords,
+        dist=dist,
+        candidate_neighbors=candidate_map if use_candidates else None,
+        prior_map=prior_map,
+        restrict_edge_cost_to_candidates=bool(pop.get("restrict_edge_cost_to_candidates", False)) and use_candidates,
+    )
+
+    row = {
+        "instance": spec.name,
+        "n": n,
+        "edge_weight_type": meta.get("EDGE_WEIGHT_TYPE", ""),
+        "tsplib_path": str(tsp_path),
+        "candidate_source": candidate_source,
+        "use_candidates": use_candidates,
+        "use_prior": use_prior,
+        "restrict_edge_cost_to_candidates": problem.restrict_edge_cost_to_candidates,
+    }
+    pd.DataFrame([row]).to_csv(artifact_dir / f"problem_{spec.name}_load_info.csv", index=False)
+    print(
+        f"[load] {spec.name}: n={n}, type={row['edge_weight_type']}, "
+        f"candidates={candidate_source}, prior={'on' if prior_map else 'off'}"
+    )
+    return spec.name, problem, spec.optimum
+
+
+def load_selected_problems(cfg: dict, artifact_dir: Path, eval_split: str) -> list[tuple[str, SparseTSPProblem, float | None]]:
+    problems = []
+    for spec in selected_specs(cfg, eval_split):
+        problems.append(load_problem_for_spec(cfg, spec, artifact_dir))
+    if not problems:
+        raise ValueError(f"No problems selected for eval_split={eval_split!r}")
+    return problems
+
+
+def make_llm_call(cfg: dict):
+    llm = cfg.get("llm", {})
+    max_keys = int(llm.get("groq_max_keys", 10))
+    key_envs = ["GROQ_API_KEY"] + [f"GROQ_API_KEY_{i}" for i in range(1, max_keys + 1)]
+    provider = str(llm.get("provider", "groq")).lower()
+    if provider != "groq":
+        raise ValueError(f"Only provider='groq' is implemented in this public TSP launcher, got {provider!r}")
+
+    def _call(messages: list[dict[str, str]]) -> str:
+        return call_groq_chat(
+            messages,
+            model=str(llm.get("model", "llama-3.3-70b-versatile")),
+            api_key_envs=key_envs,
+            timeout_s=float(llm.get("request_timeout_s", 60)),
+            max_retries=int(llm.get("max_429_retries", llm.get("max_request_error_retries", 20))),
+            temperature=float(llm.get("temperature", 0.8)),
+            top_p=float(llm.get("top_p", 1.0)),
+        )
+
+    return _call
 
 
 def main() -> None:
@@ -148,7 +279,8 @@ def main() -> None:
         missing_candidates = selected_df[selected_df["candidate_file_found"].astype(str) == ""]
         print(f"POPMUSIC candidate mode is ON. Candidate files missing for {len(missing_candidates)}/{len(selected_df)} selected instance(s).")
         if len(missing_candidates):
-            print("Expected candidate-file naming examples are saved in selected_instances.csv.")
+            print("Missing candidate files will use kNN fallback so the LLaMEA run can still proceed.")
+            print("For final thesis runs, replace fallback candidates with the real POPMUSIC cache.")
 
     if rc.dry_run:
         run_dry_smoke(cfg, artifact_dir)
@@ -164,17 +296,44 @@ def main() -> None:
         return
 
     status = {
-        "status": "harness_initialized",
-        "note": "This repo is always LLaMEA-mode. POPMUSIC/candidate-prior behavior is controlled by variables inside that loop.",
+        "status": "running_llamea",
         "artifact_dir": str(artifact_dir),
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
     save_json(artifact_dir / "run_status.json", status)
-    (artifact_dir / "pipeline_status.txt").write_text("harness_initialized\n", encoding="utf-8")
+    (artifact_dir / "pipeline_status.txt").write_text("running_llamea\n", encoding="utf-8")
 
-    print("\nThis first repo version sets up the cleaned harness/config surface.")
-    print("Next step: connect the selected historical TSP LLaMEA provider/evaluator implementation for full non-dry runs.")
-    print(f"Artifacts initialized in: {artifact_dir}")
+    print("\nLoading selected TSP problems...")
+    problems = load_selected_problems(cfg, artifact_dir, rc.eval_split)
+
+    print("\nStarting LLaMEA loop...")
+    llm_call = make_llm_call(cfg)
+    df = run_llamea_search(cfg, problems, llm_call, artifact_dir)
+    df.to_csv(artifact_dir / "generated_attempts.csv", index=False)
+
+    best = None
+    if not df.empty and "selection_score" in df:
+        valid_df = df[df["full_valid"].astype(bool) & df["selection_score"].notna()]
+        if len(valid_df):
+            best_row = valid_df.sort_values(["selection_score", "attempt"]).iloc[0].to_dict()
+            best = best_row
+
+    status = {
+        "status": "llamea_completed",
+        "artifact_dir": str(artifact_dir),
+        "attempts": int(len(df)),
+        "best": best,
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    save_json(artifact_dir / "run_status.json", status)
+    (artifact_dir / "pipeline_status.txt").write_text("llamea_completed\n", encoding="utf-8")
+
+    print("\nLLaMEA completed.")
+    if best:
+        print(f"Best full-valid attempt: {best['attempt']} score={best['selection_score']:.4f} gap={best['mean_gap_percent']:.4f}%")
+    else:
+        print("No full-valid candidate yet. Check generated_attempts.csv, candidates.jsonl, prompts/, generated_code/, and raw_llm_responses/.")
+    print(f"Artifacts written in: {artifact_dir}")
 
 
 if __name__ == "__main__":
