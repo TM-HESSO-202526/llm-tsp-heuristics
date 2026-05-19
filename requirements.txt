@@ -1,0 +1,7 @@
+numpy>=1.24
+pandas>=2.0
+PyYAML>=6.0
+requests>=2.31
+tqdm>=4.66
+tsplib95>=0.7.1
+pytest>=8.0

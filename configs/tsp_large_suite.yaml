@@ -1,0 +1,18 @@
+suite_name: tsp_1kplus_tsplib
+instance_root: /content/drive/MyDrive/TM/TSP_instances
+candidate_cache_dir: /content/drive/MyDrive/TM/LKH_candidate_cache
+artifact_root: /content/drive/MyDrive/TM/llm-tsp-runs
+
+splits:
+  train: [dsj1000, pr1002, d1291]
+  val: [fl1400, pcb1173]
+  test: [rl1304, u1817]
+
+optima:
+  dsj1000: 18659688
+  pr1002: 259045
+  d1291: 50801
+  fl1400: 20127
+  pcb1173: 56892
+  rl1304: 252948
+  u1817: 57201

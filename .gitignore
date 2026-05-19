@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environments
+.venv/
+venv/
+env/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Experiment outputs
+experiments/runs/
+artifacts/
+outputs/
+*.zip
+*.jsonl
+*.log
+
+# Local data, large files, secrets
+data/raw/*
+!data/raw/.gitkeep
+*.tsp
+*.tour
+*.cand
+*.par
+.env
+secrets.*
+
+# OS
+.DS_Store

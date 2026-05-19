@@ -1,0 +1,31 @@
+run_name: llamea_dense_1kplus
+experiment_mode: llamea
+suite_config: configs/tsp_large_suite.yaml
+
+llm:
+  provider: groq
+  model: llama-3.3-70b-versatile
+  max_llm_calls: 40
+  min_interval_s: 15
+  api_timeout_s: 60
+
+runtime:
+  global_seed: 12345
+  candidate_timeout_s: 60
+  evaluation_timeout_s: 120
+  eval_split: train
+  dry_run: false
+
+feedback:
+  include_invalid_code_in_feedback: true
+  include_invalid_error_trace: true
+  include_parent_code_in_mutation_prompt: true
+  save_raw_llm_responses: true
+  save_generated_attempts: true
+
+popmusic:
+  use_popmusic_candidates: false
+  use_popmusic_edge_prior: false
+  prior_mode: none
+  max_candidates: 20
+  restrict_edge_cost_to_candidates: false

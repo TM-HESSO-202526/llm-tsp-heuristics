@@ -1,0 +1,9 @@
+instance,split,default_file,optimum
+
+dsj1000,train,dsj1000.tsp,18659688
+pr1002,train,pr1002.tsp,259045
+d1291,train,d1291.tsp,50801
+fl1400,val,fl1400.tsp,20127
+pcb1173,val,pcb1173.tsp,56892
+rl1304,test,rl1304.tsp,252948
+u1817,test,u1817.tsp,57201
