@@ -109,3 +109,8 @@ This first clean version does **not** include the fixed scaffold/hook experiment
 ## Thesis framing
 
 The TSP experiments showed that unrestricted LLM generation tends to rediscover common constructive families such as nearest-neighbor, insertion, and regret-style heuristics. The more useful thesis signal came from combining LLM generation with operational structure: large-instance splits, candidate restrictions, POPMUSIC/LKH candidate sets, and explicit edge-prior information. These lessons motivated the later clustering repo design.
+
+
+## Unified Colab launcher
+
+The main notebook is `notebooks/00_tsp_colab_launcher.ipynb`. It follows the same launcher philosophy as the clustering repository: one control panel, Drive mounting, repo refresh, editable install, runtime-config generation, file checks, live logs, artifact summaries, and optional artifact zip download.
