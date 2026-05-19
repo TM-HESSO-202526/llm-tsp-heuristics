@@ -44,3 +44,12 @@ If candidate restriction is active, `edge_cost(i, j)` is only guaranteed for can
 ## Why POPMUSIC matters
 
 The main TSP thesis lesson was that unrestricted LLM generation often rediscovers standard constructive families. The POPMUSIC/LKH layer provides operational structure: candidate edges and edge-frequency priors. The LLM can then use a more informative construction environment rather than starting from an unconstrained dense graph.
+
+## LLaMEA parent-selection strategies
+
+The cleaned TSP loop keeps the same parent-selection controls as the clustering launcher:
+
+- `SELECTION_STRATEGY = "1+1"`: elitist mode. The parent is the best full-valid candidate seen so far.
+- `SELECTION_STRATEGY = "1,1"`: sequential mode. The parent is the latest previous candidate.
+
+Before any full-valid parent exists, `INVALID_PARENT_REDESIGN` can trigger a redesign prompt using the latest invalid or partially valid candidate as diagnostic material. The flags `INCLUDE_INVALID_CODE_IN_FEEDBACK`, `INCLUDE_INVALID_ERROR_TRACE`, `INCLUDE_PARENT_CODE_IN_MUTATION_PROMPT`, and `HIDE_INVALID_PARENT_CODE` control exactly what the LLM sees.

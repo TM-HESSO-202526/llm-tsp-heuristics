@@ -10,12 +10,12 @@ The goal is **not** to package every historical notebook or every failed run. Th
 
 An LLM proposes executable Python heuristic code. The code is evaluated automatically on a fixed TSPLIB split. The result is fed back to the next LLM call, optionally including invalid code and error traces. This is the same research pattern used later in the clustering repo: generate, evaluate, summarize, and iterate.
 
-The TSP-specific addition is a switchable POPMUSIC/LKH layer:
+The TSP-specific addition is a switchable POPMUSIC/LKH layer inside the same LLaMEA loop:
 
 ```python
 USE_POPMUSIC_CANDIDATES = True
 USE_POPMUSIC_EDGE_PRIOR = True
-POPMUSIC_PRIOR_MODE = "frequency"  # none, candidates_only, frequency, binary_topk, shuffled
+POPMUSIC_PRIOR_MODE = "frequency"  # none, frequency, binary_topk, shuffled
 MAX_CANDIDATES = 20
 ```
 
@@ -54,7 +54,7 @@ python scripts/run_unified_tsp_pipeline.py --config configs/run_llamea_dense.yam
 
 ## Important configuration variables
 
-The unified runner and notebook launcher expose the variables that were useful during the clustering work too:
+The unified runner and notebook launcher expose the same LLaMEA-style controls used in the clustering work:
 
 ```python
 LLM_PROVIDER = "groq"
@@ -64,6 +64,13 @@ GLOBAL_SEED = 12345
 CANDIDATE_TIMEOUT_S = 60
 EVALUATION_TIMEOUT_S = 120
 
+SELECTION_STRATEGY = "1+1"       # "1+1" = elitist best-so-far parent; "1,1" = latest sequential parent
+HISTORY_LIMIT = 20
+INVALID_PARENT_REDESIGN = True
+REDESIGN_ON_ANY_INVALID_BEFORE_FULL_VALID = True
+REDESIGN_ON_TIMEOUT_PARENT = True
+HIDE_INVALID_PARENT_CODE = False
+
 INCLUDE_INVALID_CODE_IN_FEEDBACK = True
 INCLUDE_INVALID_ERROR_TRACE = True
 INCLUDE_PARENT_CODE_IN_MUTATION_PROMPT = True
@@ -71,17 +78,19 @@ SAVE_RAW_LLM_RESPONSES = True
 SAVE_GENERATED_ATTEMPTS = True
 ```
 
+There is intentionally no separate experiment-mode variable anymore. This repo always runs the TSP LLaMEA loop; dense mode, candidate mode, and POPMUSIC-prior mode are controlled by the POPMUSIC flags.
+
 The intent is that the TSP loop remains flexible enough to reproduce early LLaMEA-style experiments, while using the same cleaner runtime-control style as the clustering repo.
 
 ## Repository layout
 
 ```text
-configs/       YAML configs for dense LLaMEA, POPMUSIC LLaMEA, and prior ablation runs.
+configs/       YAML configs for dense LLaMEA and POPMUSIC-enabled LLaMEA runs.
 data/          Instance split/optimum metadata and placeholders for local TSPLIB files.
 docs/          Methodology, prompt design, POPMUSIC notes, and relation to clustering.
 experiments/   Small curated summaries only; full generated artifacts should stay in Drive.
 notebooks/     Colab launcher and archived reference notebooks.
-scripts/       CLI entrypoints for unified runs, candidate building, ablations, summaries.
+scripts/       CLI entrypoints for unified runs, candidate building, and summaries.
 src/llm_tsp/   Reusable Python package.
 tests/         Small tests/smoke checks.
 ```
@@ -104,7 +113,7 @@ This first clean version does **not** include the fixed scaffold/hook experiment
 2. the 1k+ TSPLIB split;
 3. optional POPMUSIC/LKH candidate sets;
 4. optional POPMUSIC edge-prior information;
-5. prior ablations and selected clean summaries.
+5. selected clean summaries from historical prior/candidate experiments.
 
 ## Thesis framing
 

@@ -115,9 +115,13 @@ def main() -> None:
     print("Unified TSP pipeline")
     print("-" * 80)
     print(f"run_name: {rc.run_name}")
-    print(f"experiment_mode: {rc.experiment_mode}")
+    print("mode: LLaMEA only")
     print(f"llm: {rc.llm_provider} / {rc.llm_model}")
     print(f"max_llm_calls: {rc.max_llm_calls}")
+    print(f"selection_strategy: {rc.selection_strategy}")
+    print(f"history_limit: {rc.history_limit}")
+    print(f"invalid_parent_redesign: {rc.invalid_parent_redesign}")
+    print(f"hide_invalid_parent_code: {rc.hide_invalid_parent_code}")
     print(f"smoke_test: {rc.smoke_test}")
     print(f"dry_run: {rc.dry_run}")
     print(f"eval_split: {rc.eval_split}")
@@ -161,7 +165,7 @@ def main() -> None:
 
     status = {
         "status": "harness_initialized",
-        "note": "This public first version exposes the cleaned TSP control surface. Plug in historical LLaMEA provider calls/candidate parsers as needed.",
+        "note": "This repo is always LLaMEA-mode. POPMUSIC/candidate-prior behavior is controlled by variables inside that loop.",
         "artifact_dir": str(artifact_dir),
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
@@ -169,7 +173,7 @@ def main() -> None:
     (artifact_dir / "pipeline_status.txt").write_text("harness_initialized\n", encoding="utf-8")
 
     print("\nThis first repo version sets up the cleaned harness/config surface.")
-    print("Next step: plug in the selected historical TSP LLaMEA call loop and POPMUSIC candidate-cache parser for your exact artifact format.")
+    print("Next step: connect the selected historical TSP LLaMEA provider/evaluator implementation for full non-dry runs.")
     print(f"Artifacts initialized in: {artifact_dir}")
 
 

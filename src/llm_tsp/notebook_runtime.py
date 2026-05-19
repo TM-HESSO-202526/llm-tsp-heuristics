@@ -7,9 +7,8 @@ import yaml
 
 
 DEFAULTS: dict[str, Any] = {
-    # Run identity
+    # Run identity. The TSP repo is always LLaMEA-mode; no separate mode switch.
     "RUN_NAME": "tsp_llamea_popmusic_train",
-    "EXPERIMENT_MODE": "llamea",
     "SMOKE_TEST": False,
     "DRY_RUN": False,
 
@@ -27,13 +26,23 @@ DEFAULTS: dict[str, Any] = {
     "MAX_429_RETRIES": 100,
     "MAX_REQUEST_ERROR_RETRIES": 5,
 
+    # LLaMEA evolution/search behavior, aligned with clustering launcher.
+    "SELECTION_STRATEGY": "1+1",  # "1+1" = elitist best-so-far parent; "1,1" = latest sequential parent
+    "HISTORY_LIMIT": 20,
+
+    # Invalid-parent redesign behavior, aligned with clustering launcher.
+    "INVALID_PARENT_REDESIGN": True,
+    "REDESIGN_ON_ANY_INVALID_BEFORE_FULL_VALID": True,
+    "REDESIGN_ON_TIMEOUT_PARENT": True,
+    "HIDE_INVALID_PARENT_CODE": False,
+
     # Runtime and evaluation
     "GLOBAL_SEED": 12345,
     "CANDIDATE_TIMEOUT_S": 60,
     "EVALUATION_TIMEOUT_S": 120,
     "EVAL_SPLIT": "train",
 
-    # LLaMEA-style feedback controls
+    # LLaMEA-style feedback controls.
     "INCLUDE_INVALID_CODE_IN_FEEDBACK": True,
     "INCLUDE_INVALID_ERROR_TRACE": True,
     "INCLUDE_PARENT_CODE_IN_MUTATION_PROMPT": True,
@@ -70,10 +79,6 @@ DEFAULTS: dict[str, Any] = {
 }
 
 
-def _get(globals_dict: dict[str, Any], key: str) -> Any:
-    return globals_dict.get(key, DEFAULTS[key])
-
-
 def _as_bool(value: Any) -> bool:
     if isinstance(value, bool):
         return value
@@ -87,16 +92,20 @@ def build_runtime_config_from_notebook_globals(globals_dict: dict[str, Any]) -> 
 
     The launcher notebook is intentionally only a control panel. This function
     converts the variables declared in the notebook into the nested YAML-style
-    config consumed by the backend scripts, mirroring the clustering repo pattern.
+    config consumed by the backend scripts, mirroring the clustering repo
+    pattern. TSP has no experiment-mode switch: every run uses the LLaMEA loop.
     """
     values = {k: globals_dict.get(k, v) for k, v in DEFAULTS.items()}
     smoke_test = _as_bool(values["SMOKE_TEST"])
     dry_run = _as_bool(values["DRY_RUN"])
     max_calls = 1 if smoke_test else int(values["MAX_LLM_CALLS"])
 
+    strategy = str(values["SELECTION_STRATEGY"])
+    if strategy not in {"1+1", "1,1"}:
+        raise ValueError(f"SELECTION_STRATEGY must be '1+1' or '1,1', got {strategy!r}")
+
     effective = {
         "run_name": values["RUN_NAME"],
-        "experiment_mode": values["EXPERIMENT_MODE"],
         "llm": {
             "provider": values["LLM_PROVIDER"],
             "model": values["LLM_MODEL"],
@@ -108,6 +117,14 @@ def build_runtime_config_from_notebook_globals(globals_dict: dict[str, Any]) -> 
             "request_timeout_s": float(values["LLM_REQUEST_TIMEOUT_S"]),
             "max_429_retries": int(values["MAX_429_RETRIES"]),
             "max_request_error_retries": int(values["MAX_REQUEST_ERROR_RETRIES"]),
+        },
+        "search": {
+            "selection_strategy": strategy,
+            "history_limit": int(values["HISTORY_LIMIT"]),
+            "invalid_parent_redesign": _as_bool(values["INVALID_PARENT_REDESIGN"]),
+            "redesign_on_any_invalid_before_full_valid": _as_bool(values["REDESIGN_ON_ANY_INVALID_BEFORE_FULL_VALID"]),
+            "redesign_on_timeout_parent": _as_bool(values["REDESIGN_ON_TIMEOUT_PARENT"]),
+            "hide_invalid_parent_code": _as_bool(values["HIDE_INVALID_PARENT_CODE"]),
         },
         "runtime": {
             "global_seed": int(values["GLOBAL_SEED"]),
@@ -152,63 +169,43 @@ def build_runtime_config_from_notebook_globals(globals_dict: dict[str, Any]) -> 
 
 
 def print_effective_config(effective: dict[str, Any]) -> None:
+    llm = effective.get("llm", {})
+    runtime = effective.get("runtime", {})
+    search = effective.get("search", {})
+    feedback = effective.get("feedback", {})
+    pop = effective.get("popmusic", {})
+    suite = effective.get("suite", {})
+
+    print("-" * 80)
     print("Effective TSP runtime config")
     print("-" * 80)
     print(f"run_name: {effective.get('run_name')}")
-    print(f"experiment_mode: {effective.get('experiment_mode')}")
-    llm = effective.get("llm", {})
-    runtime = effective.get("runtime", {})
-    suite = effective.get("suite", {})
-    pop = effective.get("popmusic", {})
-    feedback = effective.get("feedback", {})
+    print("mode: LLaMEA only")
     print(f"llm: {llm.get('provider')} / {llm.get('model')}")
     print(f"max_llm_calls: {llm.get('max_llm_calls')}")
-    print(f"temperature: {llm.get('temperature')}  top_p: {llm.get('top_p')}")
-    print(f"smoke_test: {runtime.get('smoke_test')}  dry_run: {runtime.get('dry_run')}")
+    print(f"selection_strategy: {search.get('selection_strategy')}")
+    print(f"history_limit: {search.get('history_limit')}")
+    print(f"invalid_parent_redesign: {search.get('invalid_parent_redesign')}")
+    print(f"hide_invalid_parent_code: {search.get('hide_invalid_parent_code')}")
+    print(f"smoke_test: {runtime.get('smoke_test')}")
+    print(f"dry_run: {runtime.get('dry_run')}")
     print(f"eval_split: {runtime.get('eval_split')}")
     print(f"global_seed: {runtime.get('global_seed')}")
     print(f"candidate_timeout_s: {runtime.get('candidate_timeout_s')}")
     print(f"evaluation_timeout_s: {runtime.get('evaluation_timeout_s')}")
-    print(f"instance_root: {suite.get('instance_root')}")
-    print(f"candidate_cache_dir: {suite.get('candidate_cache_dir')}")
-    print(f"artifact_root: {suite.get('artifact_root')}")
+    print(f"include_invalid_code_in_feedback: {feedback.get('include_invalid_code_in_feedback')}")
+    print(f"include_invalid_error_trace: {feedback.get('include_invalid_error_trace')}")
+    print(f"include_parent_code_in_mutation_prompt: {feedback.get('include_parent_code_in_mutation_prompt')}")
     print(f"use_popmusic_candidates: {pop.get('use_popmusic_candidates')}")
     print(f"use_popmusic_edge_prior: {pop.get('use_popmusic_edge_prior')}")
     print(f"popmusic_prior_mode: {pop.get('prior_mode')}")
     print(f"max_candidates: {pop.get('max_candidates')}")
     print(f"restrict_edge_cost_to_candidates: {pop.get('restrict_edge_cost_to_candidates')}")
     print(f"allow_non_candidate_edges_in_final_tour: {pop.get('allow_non_candidate_edges_in_final_tour')}")
-    print(f"include_invalid_code_in_feedback: {feedback.get('include_invalid_code_in_feedback')}")
-    print(f"include_invalid_error_trace: {feedback.get('include_invalid_error_trace')}")
+    print(f"instance_root: {suite.get('instance_root')}")
+    print(f"candidate_cache_dir: {suite.get('candidate_cache_dir')}")
+    print(f"artifact_root: {suite.get('artifact_root')}")
+    print("splits:")
+    for split, names in suite.get("splits", {}).items():
+        print(f"  {split}: {names}")
     print("-" * 80)
-
-
-def selected_instance_names(effective: dict[str, Any]) -> list[str]:
-    split = effective.get("runtime", {}).get("eval_split", "train")
-    splits = effective.get("suite", {}).get("splits", {})
-    if split == "all":
-        names: list[str] = []
-        for part in ("train", "val", "test"):
-            names.extend(splits.get(part, []))
-        return names
-    return list(splits.get(split, []))
-
-
-def candidate_file_candidates(instance_name: str, candidate_cache_dir: str | Path) -> list[Path]:
-    root = Path(candidate_cache_dir)
-    return [
-        root / f"{instance_name}.cand",
-        root / f"{instance_name}.candidates",
-        root / f"{instance_name}_candidates.txt",
-        root / f"{instance_name}.txt",
-    ]
-
-
-def tsplib_file_candidates(instance_name: str, instance_root: str | Path) -> list[Path]:
-    root = Path(instance_root)
-    return [
-        root / f"{instance_name}.tsp",
-        root / f"{instance_name}.TSP",
-        root / instance_name / f"{instance_name}.tsp",
-        root / instance_name / f"{instance_name}.TSP",
-    ]
