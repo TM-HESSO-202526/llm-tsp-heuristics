@@ -26,8 +26,9 @@ from llm_tsp.priors import transform_prior
 from llm_tsp.baselines import nearest_neighbor, prior_greedy
 from llm_tsp.suite import specs_from_suite_config, filter_specs, InstanceSpec
 from llm_tsp.tsplib_io import read_tsplib_coords
-from llm_tsp.llm_client import call_groq_chat
+from llm_tsp.llm_client import call_groq_chat, get_secret
 from llm_tsp.llamea_loop import run_llamea_search
+from llm_tsp.prompts import objective_prompt_block
 
 
 def make_toy_problem(n: int = 100, seed: int = 0, use_candidates: bool = False, max_k: int = 20) -> SparseTSPProblem:
@@ -232,6 +233,72 @@ def make_llm_call(cfg: dict):
     return _call
 
 
+
+
+def jsonable(value):
+    if value is None:
+        return None
+    try:
+        import numpy as np
+        if isinstance(value, np.integer):
+            return int(value)
+        if isinstance(value, np.floating):
+            return float(value)
+        if isinstance(value, np.bool_):
+            return bool(value)
+    except Exception:
+        pass
+    if isinstance(value, Path):
+        return str(value)
+    return value
+
+def loaded_groq_key_names(cfg: dict) -> list[str]:
+    llm = cfg.get("llm", {})
+    max_keys = int(llm.get("groq_max_keys", 10))
+    key_envs = ["GROQ_API_KEY"] + [f"GROQ_API_KEY_{i}" for i in range(1, max_keys + 1)]
+    return [k for k in key_envs if get_secret(k)]
+
+
+def print_tsp_prompt_excerpt(cfg: dict, max_chars: int = 2600) -> None:
+    """Print only the objective block, matching the clustering launcher convention."""
+    try:
+        prompt = objective_prompt_block(cfg)
+    except Exception as e:
+        print(f"[warning] Could not build prompt excerpt: {type(e).__name__}: {e}")
+        return
+    excerpt = prompt[:max_chars].rstrip()
+    print("\n--- Objective prompt excerpt ---")
+    print(excerpt)
+    if len(prompt) > max_chars:
+        print("...")
+
+
+def make_search_instances_table(problems: list[tuple[str, SparseTSPProblem, float | None]]) -> pd.DataFrame:
+    rows = []
+    for name, problem, optimum in problems:
+        rows.append({
+            "name": name,
+            "n": int(problem.n),
+            "optimum": None if optimum is None else float(optimum),
+            "has_candidate_neighbors": problem.candidate_neighbors is not None,
+            "has_prior": problem.prior_map is not None,
+            "restrict_edge_cost_to_candidates": bool(problem.restrict_edge_cost_to_candidates),
+        })
+    return pd.DataFrame(rows)
+
+
+def write_final_run_summaries(df: pd.DataFrame, artifact_dir: Path, cfg: dict) -> dict | None:
+    """Write final summary aliases and best-code artifacts in clustering-style names."""
+    save_json(artifact_dir / "llm_final_config.json", cfg)
+    best = None
+    if df is not None and not df.empty and "selection_score" in df:
+        valid_df = df[df["full_valid"].astype(bool) & df["selection_score"].notna()]
+        if len(valid_df):
+            best_row = valid_df.sort_values(["selection_score", "attempt"]).iloc[0].to_dict()
+            best = {k: jsonable(v) for k, v in best_row.items()}
+    return best
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True, help="YAML run config")
@@ -243,18 +310,17 @@ def main() -> None:
         cfg.setdefault("runtime", {})["dry_run"] = True
     rc = flatten_runtime_config(cfg)
 
-    print("Unified TSP pipeline")
-    print("-" * 80)
+    artifact_dir = make_run_dir(rc.artifact_root, rc.run_name)
+    save_json(artifact_dir / "effective_config.json", cfg)
+    save_json(artifact_dir / "llm_final_config.json", cfg)
+
+    print("OBJECTIVE_MODE: tsp")
+    print("CENTER_CONSTRAINT: permutation_tour")
+    print(f"ARTIFACT_DIR: {artifact_dir}")
     print(f"run_name: {rc.run_name}")
     print("mode: LLaMEA only")
     print(f"llm: {rc.llm_provider} / {rc.llm_model}")
     print(f"max_llm_calls: {rc.max_llm_calls}")
-    print(f"selection_strategy: {rc.selection_strategy}")
-    print(f"history_limit: {rc.history_limit}")
-    print(f"invalid_parent_redesign: {rc.invalid_parent_redesign}")
-    print(f"hide_invalid_parent_code: {rc.hide_invalid_parent_code}")
-    print(f"smoke_test: {rc.smoke_test}")
-    print(f"dry_run: {rc.dry_run}")
     print(f"eval_split: {rc.eval_split}")
     print(f"candidate_timeout_s: {rc.candidate_timeout_s}")
     print(f"evaluation_timeout_s: {rc.evaluation_timeout_s}")
@@ -263,17 +329,10 @@ def main() -> None:
     print(f"popmusic_prior_mode: {rc.popmusic_prior_mode}")
     print(f"max_candidates: {rc.max_candidates}")
     print(f"restrict_edge_cost_to_candidates: {rc.restrict_edge_cost_to_candidates}")
-    print("-" * 80)
-
-    artifact_dir = make_run_dir(rc.artifact_root, rc.run_name)
-    print(f"ARTIFACT_DIR: {artifact_dir}")
-    save_json(artifact_dir / "effective_config.json", cfg)
 
     selected_df = write_selected_instances(cfg, artifact_dir, rc.eval_split)
-    print(f"Selected {len(selected_df)} instance(s) for split={rc.eval_split}:")
-    for _, row in selected_df.iterrows():
-        found = "found" if row["tsplib_file_found"] else "missing"
-        print(f"  - {row['instance']} opt={row['optimum']} tsplib={found}")
+    print("\nSelected TSP instances:")
+    print(selected_df[["instance", "split", "optimum", "tsplib_file_found", "candidate_file_found"]])
 
     if rc.use_popmusic_candidates:
         missing_candidates = selected_df[selected_df["candidate_file_found"].astype(str) == ""]
@@ -305,18 +364,43 @@ def main() -> None:
 
     print("\nLoading selected TSP problems...")
     problems = load_selected_problems(cfg, artifact_dir, rc.eval_split)
+    search_instances = make_search_instances_table(problems)
+    search_instances.to_csv(artifact_dir / "search_instances.csv", index=False)
 
-    print("\nStarting LLaMEA loop...")
+    print("\nSearch instances:")
+    print(search_instances)
+    print("Final eval instances: 0")
+    print("Final evaluation instance table is empty; final evaluation will be skipped.")
+
+    print("Parser and safety checks ready.")
+    loaded_keys = loaded_groq_key_names(cfg)
+    print(f"Groq keys loaded: {loaded_keys}")
+    print("LLM helpers ready. Groq timeout/retry helper is active.")
+    print("Unified prompt builder ready for objective: tsp")
+    print(f"Selection strategy: {rc.selection_strategy}")
+    print(f"Historical family avoidance: {rc.historical_family_avoidance}")
+    print(
+        "Family novelty mode: "
+        f"{rc.family_novelty_mode} | memory limit: {rc.family_memory_limit} | "
+        f"min attempts before avoid: {rc.min_family_attempts_before_avoid} | "
+        f"weak threshold: {rc.weak_family_score_threshold} | "
+        f"allow strong exploitation: {rc.allow_strong_family_exploitation}"
+    )
+    print(
+        "Invalid-parent redesign: "
+        f"{rc.invalid_parent_redesign} | any-invalid: {rc.redesign_on_any_invalid_before_full_valid} | "
+        f"timeout: {rc.redesign_on_timeout_parent} | expose-invalid-code: {not rc.hide_invalid_parent_code}"
+    )
+    print_tsp_prompt_excerpt(cfg)
+    print("Candidate evaluator ready.")
+
     llm_call = make_llm_call(cfg)
     df = run_llamea_search(cfg, problems, llm_call, artifact_dir)
     df.to_csv(artifact_dir / "generated_attempts.csv", index=False)
+    if not df.empty:
+        df.to_csv(artifact_dir / "llm_attempts.csv", index=False)
 
-    best = None
-    if not df.empty and "selection_score" in df:
-        valid_df = df[df["full_valid"].astype(bool) & df["selection_score"].notna()]
-        if len(valid_df):
-            best_row = valid_df.sort_values(["selection_score", "attempt"]).iloc[0].to_dict()
-            best = best_row
+    best = write_final_run_summaries(df, artifact_dir, cfg)
 
     status = {
         "status": "llamea_completed",
@@ -328,12 +412,13 @@ def main() -> None:
     save_json(artifact_dir / "run_status.json", status)
     (artifact_dir / "pipeline_status.txt").write_text("llamea_completed\n", encoding="utf-8")
 
-    print("\nLLaMEA completed.")
+    print("Final evaluation skipped.")
     if best:
         print(f"Best full-valid attempt: {best['attempt']} score={best['selection_score']:.4f} gap={best['mean_gap_percent']:.4f}%")
     else:
-        print("No full-valid candidate yet. Check generated_attempts.csv, candidates.jsonl, prompts/, generated_code/, and raw_llm_responses/.")
-    print(f"Artifacts written in: {artifact_dir}")
+        print("No full-valid candidate yet. Check llm_attempts.csv, candidates.jsonl, prompts/, codes/, and raw_responses/.")
+
+    print(f"Artifacts directory: {artifact_dir}")
 
 
 if __name__ == "__main__":

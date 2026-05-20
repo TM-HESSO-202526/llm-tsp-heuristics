@@ -19,7 +19,6 @@ def test_unified_pipeline_dry_run_creates_status(tmp_path):
             "candidate_timeout_s": 1,
             "evaluation_timeout_s": 1,
         },
-        "feedback": {},
         "search": {"selection_strategy": "1+1"},
         "popmusic": {"use_popmusic_candidates": False, "use_popmusic_edge_prior": False},
         "suite": {

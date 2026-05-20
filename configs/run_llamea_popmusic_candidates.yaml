@@ -20,6 +20,12 @@ search:
   redesign_on_any_invalid_before_full_valid: true
   redesign_on_timeout_parent: true
   hide_invalid_parent_code: false
+  historical_family_avoidance: false
+  family_novelty_mode: false
+  family_memory_limit: 8
+  min_family_attempts_before_avoid: 5
+  weak_family_score_threshold: 20.0
+  allow_strong_family_exploitation: true
 
 runtime:
   global_seed: 12345
@@ -30,12 +36,6 @@ runtime:
   dry_run: false
   partial_failure_penalty: 200.0
 
-feedback:
-  include_invalid_code_in_feedback: true
-  include_invalid_error_trace: true
-  include_parent_code_in_mutation_prompt: true
-  save_raw_llm_responses: true
-  save_generated_attempts: true
 
 popmusic:
   use_popmusic_candidates: true

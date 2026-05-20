@@ -71,11 +71,12 @@ REDESIGN_ON_ANY_INVALID_BEFORE_FULL_VALID = True
 REDESIGN_ON_TIMEOUT_PARENT = True
 HIDE_INVALID_PARENT_CODE = False
 
-INCLUDE_INVALID_CODE_IN_FEEDBACK = True
-INCLUDE_INVALID_ERROR_TRACE = True
-INCLUDE_PARENT_CODE_IN_MUTATION_PROMPT = True
-SAVE_RAW_LLM_RESPONSES = True
-SAVE_GENERATED_ATTEMPTS = True
+HISTORICAL_FAMILY_AVOIDANCE = False
+FAMILY_NOVELTY_MODE = False
+FAMILY_MEMORY_LIMIT = 8
+MIN_FAMILY_ATTEMPTS_BEFORE_AVOID = 5
+WEAK_FAMILY_SCORE_THRESHOLD = 20.0
+ALLOW_STRONG_FAMILY_EXPLOITATION = True
 ```
 
 There is intentionally no separate experiment-mode variable anymore. This repo always runs the TSP LLaMEA loop; dense mode, candidate mode, and POPMUSIC-prior mode are controlled by the POPMUSIC flags.
@@ -103,7 +104,22 @@ Real experiment outputs should go to Google Drive, typically:
 /content/drive/MyDrive/TM/llm-tsp-runs/
 ```
 
-Each run folder should store prompts, raw LLM responses, generated code, per-instance details, summaries, and a zipped artifact bundle. The `experiments/runs/` directory is ignored by git by default.
+Each run folder stores prompts, raw LLM responses, generated code, per-instance details, summaries, and a zipped artifact bundle. Artifact names intentionally mirror the clustering repo style:
+
+```text
+codes/iter_*.py
+prompts/prompt_iter_*.txt
+raw_responses/raw_iter_*.txt
+llm_attempts.csv
+llm_search_instance_rows.csv
+search_detail_iter_*.csv
+llm_best_attempts_top20.csv
+llm_family_summary.csv
+best_candidate_code.py
+best_candidate_summary.json
+```
+
+Legacy aliases such as `generated_attempts.csv`, `generated_code/`, and `raw_llm_responses/` are still written for convenience. The `experiments/runs/` directory is ignored by git by default.
 
 ## What this repo deliberately excludes
 

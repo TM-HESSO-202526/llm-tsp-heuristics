@@ -64,6 +64,12 @@ class RuntimeConfig:
     redesign_on_any_invalid_before_full_valid: bool = True
     redesign_on_timeout_parent: bool = True
     hide_invalid_parent_code: bool = False
+    historical_family_avoidance: bool = False
+    family_novelty_mode: bool = False
+    family_memory_limit: int = 8
+    min_family_attempts_before_avoid: int = 5
+    weak_family_score_threshold: float = 20.0
+    allow_strong_family_exploitation: bool = True
 
     # POPMUSIC/candidate-prior layer.
     use_popmusic_candidates: bool = False
@@ -72,13 +78,6 @@ class RuntimeConfig:
     max_candidates: int = 20
     restrict_edge_cost_to_candidates: bool = False
     allow_non_candidate_edges_in_final_tour: bool = True
-
-    # Feedback / artifact controls.
-    include_invalid_code_in_feedback: bool = True
-    include_invalid_error_trace: bool = True
-    include_parent_code_in_mutation_prompt: bool = True
-    save_raw_llm_responses: bool = True
-    save_generated_attempts: bool = True
 
     # Paths.
     instance_root: str = "/content/drive/MyDrive/TM/TSP_instances"
@@ -90,7 +89,6 @@ class RuntimeConfig:
 def flatten_runtime_config(cfg: dict[str, Any]) -> RuntimeConfig:
     llm = cfg.get("llm", {})
     runtime = cfg.get("runtime", {})
-    feedback = cfg.get("feedback", {})
     pop = cfg.get("popmusic", {})
     suite = cfg.get("suite", {})
     search = cfg.get("search", {})
@@ -114,17 +112,18 @@ def flatten_runtime_config(cfg: dict[str, Any]) -> RuntimeConfig:
         redesign_on_any_invalid_before_full_valid=bool(search.get("redesign_on_any_invalid_before_full_valid", True)),
         redesign_on_timeout_parent=bool(search.get("redesign_on_timeout_parent", True)),
         hide_invalid_parent_code=bool(search.get("hide_invalid_parent_code", False)),
+        historical_family_avoidance=bool(search.get("historical_family_avoidance", False)),
+        family_novelty_mode=bool(search.get("family_novelty_mode", False)),
+        family_memory_limit=int(search.get("family_memory_limit", 8)),
+        min_family_attempts_before_avoid=int(search.get("min_family_attempts_before_avoid", 5)),
+        weak_family_score_threshold=float(search.get("weak_family_score_threshold", 20.0)),
+        allow_strong_family_exploitation=bool(search.get("allow_strong_family_exploitation", True)),
         use_popmusic_candidates=bool(pop.get("use_popmusic_candidates", False)),
         use_popmusic_edge_prior=bool(pop.get("use_popmusic_edge_prior", False)),
         popmusic_prior_mode=str(pop.get("prior_mode", "none")),
         max_candidates=int(pop.get("max_candidates", 20)),
         restrict_edge_cost_to_candidates=bool(pop.get("restrict_edge_cost_to_candidates", False)),
         allow_non_candidate_edges_in_final_tour=bool(pop.get("allow_non_candidate_edges_in_final_tour", True)),
-        include_invalid_code_in_feedback=bool(feedback.get("include_invalid_code_in_feedback", True)),
-        include_invalid_error_trace=bool(feedback.get("include_invalid_error_trace", True)),
-        include_parent_code_in_mutation_prompt=bool(feedback.get("include_parent_code_in_mutation_prompt", True)),
-        save_raw_llm_responses=bool(feedback.get("save_raw_llm_responses", True)),
-        save_generated_attempts=bool(feedback.get("save_generated_attempts", True)),
         instance_root=str(suite.get("instance_root", "/content/drive/MyDrive/TM/TSP_instances")),
         candidate_cache_dir=str(suite.get("candidate_cache_dir", "/content/drive/MyDrive/TM/LKH_candidate_cache")),
         artifact_root=str(suite.get("artifact_root", "/content/drive/MyDrive/TM/llm-tsp-runs")),

@@ -1,30 +1,46 @@
 # Prompt design
 
-The TSP prompt should be close in spirit to the clustering repo prompts: explicit interface, strict output format, clear objective, and feedback from previous attempts.
+The TSP prompt mirrors the clustering repo methodology as closely as possible while keeping the problem-specific TSP interface.
 
-## Required controls
+## Required generated-code interface
 
-The repo keeps prompt controls that were useful in the clustering pipeline:
+The LLM returns the answer in the same `# Name:` / `# Code:` format used by the clustering pipeline. The code must define exactly one class:
 
-- include or exclude invalid code in feedback;
-- include or exclude the invalid traceback;
-- include or exclude parent/best code in mutation prompts;
-- save raw LLM responses;
-- save generated attempts even if invalid.
+```python
+class TSPHeuristic:
+    def __call__(self, problem, rng=None):
+        ...
+```
 
-## Recommended instruction block
+The evaluator instantiates the class and calls:
 
-The LLM should be told:
+```python
+algo = TSPHeuristic()
+tour = algo(problem, rng)
+```
 
-- return only Python code inside one fenced block;
-- implement `construct_tour(problem, rng=None)`;
-- return a valid permutation of all nodes;
-- do not call external solvers;
-- do not read files;
-- do not use network access;
-- avoid O(n^3) behavior on 1k+ nodes;
-- if POPMUSIC candidates are active, prefer `problem.neighbors(i)` and `problem.prior(i, j)`.
+The returned `tour` must be a permutation of `0..problem.n-1`. The evaluator closes the cycle automatically.
 
-## Important difference from clustering
+## Alignment with clustering
 
-The TSP repo should not use the fixed hook/scaffold experiments as the public main story. The core public loop remains a LLaMEA-style candidate-generation loop, optionally equipped with POPMUSIC candidate/prior information.
+The TSP prompt follows the same high-level methodology as the clustering prompt:
+
+- the base prompt contains the objective, interface, constraints, and `# Name` / `# Code` return format;
+- the LLM provides the name, while the backend infers the family from the name and code;
+- selection-strategy wording is not embedded in the base prompt;
+- `1+1`, `1,1`, and invalid-parent redesign wording is injected dynamically only when a parent exists;
+- invalid/partial parent code is shown once, in the same prompt section as clustering, and only hidden when `HIDE_INVALID_PARENT_CODE=True` in invalid-redesign mode;
+- family-memory controls use the clustering variable names and are disabled by default.
+
+## TSP-specific objective block
+
+The TSP-specific block tells the LLM that it receives a `problem` object with:
+
+- `problem.n`
+- `problem.edge_cost(i, j)`
+- `problem.full_edge_cost(i, j)`
+- `problem.neighbors(i)`
+- `problem.prior(i, j)`
+- `problem.coords`
+
+When POPMUSIC candidates are active, the prompt asks the LLM to prefer sparse candidate neighborhoods and the optional edge-prior signal. This is the TSP equivalent of activating a major experimental mode in the clustering launcher.

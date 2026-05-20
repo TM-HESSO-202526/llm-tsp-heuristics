@@ -36,18 +36,21 @@ DEFAULTS: dict[str, Any] = {
     "REDESIGN_ON_TIMEOUT_PARENT": True,
     "HIDE_INVALID_PARENT_CODE": False,
 
+    # Family memory / novelty controls, same terminology as clustering.
+    # They are implemented but kept off by default, so nothing is injected
+    # into the prompt unless these are explicitly enabled.
+    "HISTORICAL_FAMILY_AVOIDANCE": False,
+    "FAMILY_NOVELTY_MODE": False,
+    "FAMILY_MEMORY_LIMIT": 8,
+    "MIN_FAMILY_ATTEMPTS_BEFORE_AVOID": 5,
+    "WEAK_FAMILY_SCORE_THRESHOLD": 20.0,
+    "ALLOW_STRONG_FAMILY_EXPLOITATION": True,
+
     # Runtime and evaluation
     "GLOBAL_SEED": 12345,
     "CANDIDATE_TIMEOUT_S": 60,
     "EVALUATION_TIMEOUT_S": 120,
     "EVAL_SPLIT": "train",
-
-    # LLaMEA-style feedback controls.
-    "INCLUDE_INVALID_CODE_IN_FEEDBACK": True,
-    "INCLUDE_INVALID_ERROR_TRACE": True,
-    "INCLUDE_PARENT_CODE_IN_MUTATION_PROMPT": True,
-    "SAVE_RAW_LLM_RESPONSES": True,
-    "SAVE_GENERATED_ATTEMPTS": True,
 
     # TSP data / artifact paths
     "INSTANCE_ROOT": "/content/drive/MyDrive/TM/TSP_instances",
@@ -125,6 +128,12 @@ def build_runtime_config_from_notebook_globals(globals_dict: dict[str, Any]) -> 
             "redesign_on_any_invalid_before_full_valid": _as_bool(values["REDESIGN_ON_ANY_INVALID_BEFORE_FULL_VALID"]),
             "redesign_on_timeout_parent": _as_bool(values["REDESIGN_ON_TIMEOUT_PARENT"]),
             "hide_invalid_parent_code": _as_bool(values["HIDE_INVALID_PARENT_CODE"]),
+            "historical_family_avoidance": _as_bool(values["HISTORICAL_FAMILY_AVOIDANCE"]),
+            "family_novelty_mode": _as_bool(values["FAMILY_NOVELTY_MODE"]),
+            "family_memory_limit": int(values["FAMILY_MEMORY_LIMIT"]),
+            "min_family_attempts_before_avoid": int(values["MIN_FAMILY_ATTEMPTS_BEFORE_AVOID"]),
+            "weak_family_score_threshold": float(values["WEAK_FAMILY_SCORE_THRESHOLD"]),
+            "allow_strong_family_exploitation": _as_bool(values["ALLOW_STRONG_FAMILY_EXPLOITATION"]),
         },
         "runtime": {
             "global_seed": int(values["GLOBAL_SEED"]),
@@ -133,13 +142,6 @@ def build_runtime_config_from_notebook_globals(globals_dict: dict[str, Any]) -> 
             "eval_split": values["EVAL_SPLIT"],
             "smoke_test": smoke_test,
             "dry_run": dry_run,
-        },
-        "feedback": {
-            "include_invalid_code_in_feedback": _as_bool(values["INCLUDE_INVALID_CODE_IN_FEEDBACK"]),
-            "include_invalid_error_trace": _as_bool(values["INCLUDE_INVALID_ERROR_TRACE"]),
-            "include_parent_code_in_mutation_prompt": _as_bool(values["INCLUDE_PARENT_CODE_IN_MUTATION_PROMPT"]),
-            "save_raw_llm_responses": _as_bool(values["SAVE_RAW_LLM_RESPONSES"]),
-            "save_generated_attempts": _as_bool(values["SAVE_GENERATED_ATTEMPTS"]),
         },
         "suite": {
             "instance_root": values["INSTANCE_ROOT"],
@@ -172,7 +174,6 @@ def print_effective_config(effective: dict[str, Any]) -> None:
     llm = effective.get("llm", {})
     runtime = effective.get("runtime", {})
     search = effective.get("search", {})
-    feedback = effective.get("feedback", {})
     pop = effective.get("popmusic", {})
     suite = effective.get("suite", {})
 
@@ -185,17 +186,24 @@ def print_effective_config(effective: dict[str, Any]) -> None:
     print(f"max_llm_calls: {llm.get('max_llm_calls')}")
     print(f"selection_strategy: {search.get('selection_strategy')}")
     print(f"history_limit: {search.get('history_limit')}")
-    print(f"invalid_parent_redesign: {search.get('invalid_parent_redesign')}")
-    print(f"hide_invalid_parent_code: {search.get('hide_invalid_parent_code')}")
+    print(
+        "Invalid-parent redesign: "
+        f"{search.get('invalid_parent_redesign')} | any-invalid: {search.get('redesign_on_any_invalid_before_full_valid')} | "
+        f"timeout: {search.get('redesign_on_timeout_parent')} | expose-invalid-code: {not search.get('hide_invalid_parent_code', False)}"
+    )
+    print(
+        "Family novelty mode: "
+        f"{search.get('family_novelty_mode')} | memory limit: {search.get('family_memory_limit')} | "
+        f"min attempts before avoid: {search.get('min_family_attempts_before_avoid')} | "
+        f"weak threshold: {search.get('weak_family_score_threshold')} | "
+        f"allow strong exploitation: {search.get('allow_strong_family_exploitation')}"
+    )
     print(f"smoke_test: {runtime.get('smoke_test')}")
     print(f"dry_run: {runtime.get('dry_run')}")
     print(f"eval_split: {runtime.get('eval_split')}")
     print(f"global_seed: {runtime.get('global_seed')}")
     print(f"candidate_timeout_s: {runtime.get('candidate_timeout_s')}")
     print(f"evaluation_timeout_s: {runtime.get('evaluation_timeout_s')}")
-    print(f"include_invalid_code_in_feedback: {feedback.get('include_invalid_code_in_feedback')}")
-    print(f"include_invalid_error_trace: {feedback.get('include_invalid_error_trace')}")
-    print(f"include_parent_code_in_mutation_prompt: {feedback.get('include_parent_code_in_mutation_prompt')}")
     print(f"use_popmusic_candidates: {pop.get('use_popmusic_candidates')}")
     print(f"use_popmusic_edge_prior: {pop.get('use_popmusic_edge_prior')}")
     print(f"popmusic_prior_mode: {pop.get('prior_mode')}")

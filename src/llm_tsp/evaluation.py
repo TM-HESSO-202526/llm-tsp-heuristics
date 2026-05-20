@@ -62,6 +62,7 @@ def compile_candidate(code: str):
     reject_forbidden_code(code)
     ns: dict[str, object] = {}
     safe_builtins = {
+        "__build_class__": __build_class__,
         "__import__": _restricted_import,
         "abs": abs,
         "all": all,
@@ -72,16 +73,19 @@ def compile_candidate(code: str):
         "Exception": Exception,
         "float": float,
         "int": int,
+        "isinstance": isinstance,
         "len": len,
         "list": list,
         "map": map,
         "max": max,
         "min": min,
+        "object": object,
         "print": print,
         "range": range,
         "reversed": reversed,
         "round": round,
         "set": set,
+        "slice": slice,
         "sorted": sorted,
         "sum": sum,
         "tuple": tuple,
@@ -94,12 +98,20 @@ def compile_candidate(code: str):
         "math": __import__("math"),
         "random": __import__("random"),
         "__builtins__": safe_builtins,
+        "__name__": "generated_tsp_candidate",
     }
     exec(code, safe_globals, ns)
-    fn = ns.get("construct_tour") or safe_globals.get("construct_tour")
-    if not callable(fn):
-        raise ValueError("Generated code must define construct_tour(problem, rng=None)")
-    return fn
+    cls = ns.get("TSPHeuristic") or safe_globals.get("TSPHeuristic")
+    if cls is None:
+        raise ValueError("Generated code must define class TSPHeuristic")
+    algo = cls()
+    if not callable(algo):
+        raise ValueError("TSPHeuristic instance is not callable")
+
+    def _call(problem, rng=None):
+        return algo(problem, rng)
+
+    return _call
 
 
 def evaluate_code_on_problem(
