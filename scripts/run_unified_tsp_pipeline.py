@@ -32,7 +32,7 @@ from llm_tsp.lkh_popmusic import (
 from llm_tsp.baselines import nearest_neighbor, prior_greedy
 from llm_tsp.suite import specs_from_suite_config, filter_specs, InstanceSpec
 from llm_tsp.tsplib_io import read_tsplib_coords
-from llm_tsp.llm_client import call_groq_chat, get_secret
+from llm_tsp.llm_client import call_groq_chat, get_secret, loaded_groq_key_names as _loaded_groq_key_names
 from llm_tsp.llamea_loop import run_llamea_search
 from llm_tsp.prompts import objective_prompt_block
 
@@ -315,7 +315,9 @@ def make_llm_call(cfg: dict):
             model=str(llm.get("model", "llama-3.3-70b-versatile")),
             api_key_envs=key_envs,
             timeout_s=float(llm.get("request_timeout_s", 60)),
-            max_retries=int(llm.get("max_429_retries", llm.get("max_request_error_retries", 20))),
+            max_429_retries=int(llm.get("max_429_retries", 100)),
+            max_request_error_retries=int(llm.get("max_request_error_retries", 5)),
+            calls_per_minute_per_key=float(llm.get("calls_per_minute_per_key", 2)),
             temperature=float(llm.get("temperature", 0.8)),
             top_p=float(llm.get("top_p", 1.0)),
         )
@@ -346,7 +348,7 @@ def loaded_groq_key_names(cfg: dict) -> list[str]:
     llm = cfg.get("llm", {})
     max_keys = int(llm.get("groq_max_keys", 10))
     key_envs = ["GROQ_API_KEY"] + [f"GROQ_API_KEY_{i}" for i in range(1, max_keys + 1)]
-    return [k for k in key_envs if get_secret(k)]
+    return _loaded_groq_key_names(key_envs)
 
 
 def print_tsp_prompt_excerpt(cfg: dict, max_chars: int = 2600) -> None:
