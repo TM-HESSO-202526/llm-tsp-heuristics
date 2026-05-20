@@ -38,41 +38,80 @@ def k_nearest_candidates(dist: np.ndarray, max_k: int = 20) -> CandidateMap:
 
 
 def parse_simple_candidate_file(path: str | Path, n: int | None = None) -> CandidateMap:
-    """Parse a permissive candidate file.
+    """Parse normalized candidate rows or LKH CANDIDATE_FILE output.
 
-    This parser accepts simple text rows like:
+    Supported formats:
+    - normalized 0-based rows: ``0 12 94 103``
+    - normalized 1-based rows: ``1 13 95 104``
+    - LKH candidate-set rows inside ``CANDIDATE_SET_SECTION`` where rows are
+      ``node degree neighbor alpha neighbor alpha ...`` using 1-based node ids.
 
-    ```text
-    0 12 94 103
-    1 3 8 90
-    ```
-
-    i.e. first token is the source node, remaining integer tokens are neighbors.
-    Historical LKH candidate files may need a specialized converter before this
-    normalized form is produced.
+    The returned map is always 0-based and normalized/truncated later by the
+    caller when needed.
     """
     path = Path(path)
+    lines = path.read_text(encoding="utf-8", errors="ignore").splitlines()
+    has_lkh_section = any("CANDIDATE_SET_SECTION" in line.upper() for line in lines)
+
     cands: CandidateMap = {}
     max_node = -1
-    for raw in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+    raw_rows: list[list[int]] = []
+    in_lkh = not has_lkh_section
+
+    for raw in lines:
         line = raw.strip()
+        upper = line.upper()
         if not line or line.startswith("#"):
             continue
-        parts = []
+        if "CANDIDATE_SET_SECTION" in upper:
+            in_lkh = True
+            continue
+        if upper.startswith("EOF") or line == "-1":
+            if has_lkh_section:
+                break
+            continue
+        if has_lkh_section and not in_lkh:
+            continue
+
+        parts: list[int] = []
         for tok in line.replace(",", " ").split():
             try:
                 parts.append(int(tok))
             except ValueError:
                 pass
-        if len(parts) < 2:
-            continue
-        i, neighs = parts[0], parts[1:]
-        cands.setdefault(i, []).extend(j for j in neighs if j != i)
-        max_node = max(max_node, i, *neighs)
-    if n is None:
-        n = max_node + 1
-    return normalize_candidates(cands, n=n)
+        if len(parts) >= 2:
+            raw_rows.append(parts)
+            max_node = max(max_node, *parts)
 
+    if n is None:
+        # LKH uses 1-based ids; simple files may use 0-based ids. The normalize
+        # step below will correct once we detect which style is present.
+        n = max_node + 1
+
+    # Detect LKH rows only when the file explicitly has the LKH section marker.
+    # This avoids misreading simple rows like "0 1 2 3" as degree/pair rows.
+    looks_lkh = has_lkh_section
+    min_first = min((r[0] for r in raw_rows), default=0)
+    max_first = max((r[0] for r in raw_rows), default=-1)
+    one_based = has_lkh_section or (min_first >= 1 and max_first <= n)
+
+    for parts in raw_rows:
+        if looks_lkh and len(parts) >= 4:
+            i_raw = parts[0]
+            degree = max(0, parts[1])
+            pair_tokens = parts[2:]
+            neighs_raw = pair_tokens[0 : 2 * degree : 2] if degree else pair_tokens[::2]
+        else:
+            i_raw = parts[0]
+            neighs_raw = parts[1:]
+
+        i = i_raw - 1 if one_based else i_raw
+        neighs = [(j - 1 if one_based else j) for j in neighs_raw]
+        if i < 0:
+            continue
+        cands.setdefault(i, []).extend(j for j in neighs if j != i)
+
+    return normalize_candidates(cands, n=n)
 
 def prior_from_candidate_frequency(candidate_runs: list[CandidateMap], n: int) -> PriorMap:
     counts: dict[tuple[int, int], float] = defaultdict(float)

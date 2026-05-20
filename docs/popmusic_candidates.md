@@ -1,6 +1,6 @@
 # POPMUSIC / LKH candidate sets
 
-This repo supports a switchable POPMUSIC/LKH candidate layer.
+This repo supports a switchable POPMUSIC/LKH candidate layer. If candidate mode is active and a candidate file is missing, the main pipeline generates it immediately with LKH/POPMUSIC and saves it to the cache. There is no silent kNN fallback.
 
 Typical thesis settings:
 
@@ -27,4 +27,4 @@ The candidate cache default is:
 - `binary_topk`: keep only top-k prior edges.
 - `shuffled`: sanity check / weakened prior.
 
-The clean repo should allow these modes to be changed by config only, just like the clustering repo allows sampling/decomposition modes to be toggled by config.
+Candidate mode is guidance for construction. The generated heuristic should use `problem.neighbors(i)` and the prior signal when available, but the final returned tour is a normal Hamiltonian cycle and may include non-candidate edges. Final cost is always computed on the true full TSPLIB distance.

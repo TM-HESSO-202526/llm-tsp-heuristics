@@ -42,8 +42,6 @@ popmusic:
   use_popmusic_edge_prior: true
   prior_mode: frequency
   max_candidates: 20
-  restrict_edge_cost_to_candidates: true
-  allow_non_candidate_edges_in_final_tour: false
 
 lkh:
   lkh_binary: /content/tools/lkh/LKH
@@ -53,3 +51,4 @@ lkh:
   popmusic_max_neighbors: 5
   popmusic_trials: 1
   popmusic_initial_tour: false
+  generation_timeout_s: 900

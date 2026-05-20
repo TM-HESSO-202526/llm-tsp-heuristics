@@ -119,7 +119,6 @@ def evaluate_code_on_problem(
     problem: SparseTSPProblem,
     optimum: float | None = None,
     seed: int = 0,
-    require_candidate_tour: bool = False,
     timeout_s: float | None = None,
 ) -> EvaluationResult:
     start = time.time()
@@ -130,8 +129,6 @@ def evaluate_code_on_problem(
             tour = fn(problem, rng=rng)
             validate_tour(tour, problem.n)
             uses_only_candidates = problem.tour_uses_only_candidates(tour)
-            if require_candidate_tour and not uses_only_candidates:
-                raise ValueError("Final tour uses at least one non-candidate edge")
             cost = tour_cost_from_matrix(tour, problem.dist)
             gap = None
             if optimum and optimum > 0:

@@ -33,9 +33,9 @@ def objective_prompt_block(config: dict[str, Any]) -> str:
         "",
         "Problem object seen by your code:",
         "- problem.n: number of cities.",
-        "- problem.edge_cost(i, j): edge cost, possibly candidate-restricted when candidate mode is active.",
-        "- problem.full_edge_cost(i, j): unrestricted edge cost for diagnostics or bounded fallback checks.",
-        "- problem.neighbors(i): sparse candidate-neighbor list for city i when candidate mode is active.",
+        "- problem.edge_cost(i, j): true full TSPLIB edge cost.",
+        "- problem.full_edge_cost(i, j): same true full TSPLIB edge cost; kept as an explicit alias.",
+        "- problem.neighbors(i): sparse POPMUSIC/LKH candidate-neighbor list for city i when candidate mode is active.",
         "- problem.prior(i, j): optional POPMUSIC/LKH edge-support signal.",
         "- problem.coords: city coordinates as a numpy array when available.",
     ]
@@ -44,8 +44,9 @@ def objective_prompt_block(config: dict[str, Any]) -> str:
             "",
             "POPMUSIC/LKH candidate mode is active.",
             "Use problem.neighbors(i) as the main sparse neighborhood for local choices.",
-            "When candidate restriction is active, problem.edge_cost(i, j) may only be available for candidate edges.",
-            "problem.full_edge_cost(i, j) exists for diagnostics or explicitly bounded fallback checks, but do not turn it into an exhaustive dense O(n^2) scan unless the loop is tightly bounded.",
+            "Candidate lists are guidance, not a hard final-tour feasibility constraint.",
+            "problem.edge_cost(i, j) still returns the true full TSPLIB edge cost; use dense edge-cost scans only when tightly bounded.",
+            "The final returned tour is a normal full TSP permutation and is evaluated on the true full TSPLIB distance.",
         ]
     if pop.get("use_popmusic_edge_prior"):
         lines += [

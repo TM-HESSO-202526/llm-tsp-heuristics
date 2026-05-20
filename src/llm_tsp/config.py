@@ -76,8 +76,10 @@ class RuntimeConfig:
     use_popmusic_edge_prior: bool = False
     popmusic_prior_mode: str = "none"
     max_candidates: int = 20
-    restrict_edge_cost_to_candidates: bool = False
-    allow_non_candidate_edges_in_final_tour: bool = True
+    # Candidate mode policy is fixed:
+    # POPMUSIC/LKH candidates are exposed as guidance through problem.neighbors(i).
+    # Final tours are normal TSP permutations and are always evaluated on the true full TSPLIB distance.
+    lkh_binary_path: str = "/content/tools/lkh/LKH"
 
     # Paths.
     instance_root: str = "/content/drive/MyDrive/TM/TSP_instances"
@@ -122,8 +124,7 @@ def flatten_runtime_config(cfg: dict[str, Any]) -> RuntimeConfig:
         use_popmusic_edge_prior=bool(pop.get("use_popmusic_edge_prior", False)),
         popmusic_prior_mode=str(pop.get("prior_mode", "none")),
         max_candidates=int(pop.get("max_candidates", 20)),
-        restrict_edge_cost_to_candidates=bool(pop.get("restrict_edge_cost_to_candidates", False)),
-        allow_non_candidate_edges_in_final_tour=bool(pop.get("allow_non_candidate_edges_in_final_tour", True)),
+        lkh_binary_path=str(pop.get("lkh_binary_path", cfg.get("lkh", {}).get("lkh_binary", "/content/tools/lkh/LKH"))),
         instance_root=str(suite.get("instance_root", "/content/drive/MyDrive/TM/TSP_instances")),
         candidate_cache_dir=str(suite.get("candidate_cache_dir", "/content/drive/MyDrive/TM/LKH_candidate_cache")),
         artifact_root=str(suite.get("artifact_root", "/content/drive/MyDrive/TM/llm-tsp-runs")),

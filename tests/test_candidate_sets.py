@@ -13,3 +13,25 @@ def test_normalize_candidates_bidirectional():
     c = normalize_candidates({0: [1]}, n=3, max_k=2)
     assert 1 in c[0]
     assert 0 in c[1]
+
+
+def test_parse_lkh_candidate_file_section(tmp_path):
+    from llm_tsp.candidate_sets import parse_simple_candidate_file
+
+    p = tmp_path / "toy.cand"
+    p.write_text(
+        "DIMENSION : 4\n"
+        "CANDIDATE_SET_SECTION\n"
+        "1 2 2 0 3 0\n"
+        "2 2 1 0 4 0\n"
+        "3 1 1 0\n"
+        "4 1 2 0\n"
+        "-1\n"
+        "EOF\n",
+        encoding="utf-8",
+    )
+    c = parse_simple_candidate_file(p, n=4)
+    assert 1 in c[0]
+    assert 2 in c[0]
+    assert 0 in c[1]
+    assert 3 in c[1]

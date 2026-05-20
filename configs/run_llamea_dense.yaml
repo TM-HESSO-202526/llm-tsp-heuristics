@@ -42,5 +42,3 @@ popmusic:
   use_popmusic_edge_prior: false
   prior_mode: none
   max_candidates: 20
-  restrict_edge_cost_to_candidates: false
-  allow_non_candidate_edges_in_final_tour: true

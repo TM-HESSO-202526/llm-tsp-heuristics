@@ -19,7 +19,7 @@ POPMUSIC_PRIOR_MODE = "frequency"  # none, frequency, binary_topk, shuffled
 MAX_CANDIDATES = 20
 ```
 
-With these flags, the same LLaMEA loop can be run in dense mode, candidate-restricted mode, or candidate-restricted mode with a POPMUSIC edge prior.
+With these flags, the same LLaMEA loop can be run in dense mode, candidate-guided mode, or candidate-guided mode with a POPMUSIC edge prior. When candidate mode is active, missing POPMUSIC/LKH candidate files are generated automatically into the cache before the LLaMEA loop evaluates candidates. Candidate edges guide construction, but final returned tours are normal TSP tours and may include non-candidate edges; they are always evaluated on the true full TSPLIB distance.
 
 ## Instance policy
 
@@ -133,7 +133,7 @@ This first clean version does **not** include the fixed scaffold/hook experiment
 
 ## Thesis framing
 
-The TSP experiments showed that unrestricted LLM generation tends to rediscover common constructive families such as nearest-neighbor, insertion, and regret-style heuristics. The more useful thesis signal came from combining LLM generation with operational structure: large-instance splits, candidate restrictions, POPMUSIC/LKH candidate sets, and explicit edge-prior information. These lessons motivated the later clustering repo design.
+The TSP experiments showed that unrestricted LLM generation tends to rediscover common constructive families such as nearest-neighbor, insertion, and regret-style heuristics. The more useful thesis signal came from combining LLM generation with operational structure: large-instance splits, candidate-guided construction, POPMUSIC/LKH candidate sets, and explicit edge-prior information. These lessons motivated the later clustering repo design.
 
 
 ## Unified Colab launcher

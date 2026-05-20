@@ -658,10 +658,8 @@ def run_llamea_search(
                 problem,
                 optimum=optimum,
                 seed=int(runtime_cfg.get("global_seed", 0)) + 1000 * attempt + problem_index,
-                require_candidate_tour=bool(
-                    pop_cfg.get("allow_non_candidate_edges_in_final_tour", True) is False
-                    and pop_cfg.get("restrict_edge_cost_to_candidates", False)
-                ),
+                # Final tour validity is normal TSP permutation validity.
+                # Candidate lists guide construction; cost is measured on full TSPLIB distance.
                 timeout_s=float(runtime_cfg.get("evaluation_timeout_s", 0) or 0),
             )
             eval_results.append(res)

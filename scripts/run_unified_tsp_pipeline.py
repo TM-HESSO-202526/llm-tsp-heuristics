@@ -23,6 +23,7 @@ from llm_tsp.candidate_sets import (
     prior_from_candidate_frequency,
 )
 from llm_tsp.priors import transform_prior
+from llm_tsp.lkh_popmusic import PopmusicParams, popmusic_candidate_file_name, run_popmusic_candidate_generation
 from llm_tsp.baselines import nearest_neighbor, prior_greedy
 from llm_tsp.suite import specs_from_suite_config, filter_specs, InstanceSpec
 from llm_tsp.tsplib_io import read_tsplib_coords
@@ -42,7 +43,6 @@ def make_toy_problem(n: int = 100, seed: int = 0, use_candidates: bool = False, 
         dist=dist,
         candidate_neighbors=cands,
         prior_map=prior,
-        restrict_edge_cost_to_candidates=False,
     )
 
 
@@ -68,8 +68,10 @@ def run_dry_smoke(cfg: dict, artifact_dir: Path) -> None:
     pd.DataFrame(rows).to_csv(artifact_dir / "dry_run_smoke_results.csv", index=False)
 
 
-def candidate_paths_for_instance(instance_name: str, root: Path) -> list[Path]:
+def candidate_paths_for_instance(instance_name: str, root: Path, params: PopmusicParams | None = None) -> list[Path]:
+    params = params or PopmusicParams()
     return [
+        popmusic_candidate_file_name(instance_name, root, params),
         root / f"{instance_name}.cand",
         root / f"{instance_name}.candidates",
         root / f"{instance_name}_candidates.txt",
@@ -151,19 +153,42 @@ def load_problem_for_spec(cfg: dict, spec: InstanceSpec, artifact_dir: Path) -> 
     candidate_source = "none"
 
     if use_candidates or use_prior:
-        cand_path = select_existing_path(candidate_paths_for_instance(spec.name, candidate_root))
-        if cand_path is not None:
-            try:
-                candidate_map = parse_simple_candidate_file(cand_path, n=n)
-                candidate_source = str(cand_path)
-            except Exception as e:
-                print(f"[warning] Could not parse candidate file for {spec.name}: {e}. Falling back to kNN candidates.")
-                candidate_map = k_nearest_candidates(dist, max_k=max_k)
-                candidate_source = "knn_fallback_parse_error"
+        lkh_cfg = cfg.get("lkh", {})
+        params = PopmusicParams(
+            max_candidates=int(pop.get("max_candidates", lkh_cfg.get("max_candidates", max_k))),
+            popmusic_sample_size=int(lkh_cfg.get("popmusic_sample_size", 14)),
+            popmusic_solutions=int(lkh_cfg.get("popmusic_solutions", 20)),
+            popmusic_max_neighbors=int(lkh_cfg.get("popmusic_max_neighbors", 5)),
+            popmusic_trials=int(lkh_cfg.get("popmusic_trials", 1)),
+            popmusic_initial_tour=bool(lkh_cfg.get("popmusic_initial_tour", False)),
+        )
+        cand_path = select_existing_path(candidate_paths_for_instance(spec.name, candidate_root, params))
+        if cand_path is None:
+            # Historical behavior: if the POPMUSIC cache is absent, build the official
+            # LKH CANDIDATE_FILE immediately and store it under the historical cache name.
+            cand_path = popmusic_candidate_file_name(spec.name, candidate_root, params)
+            lkh_binary = pop.get("lkh_binary_path") or lkh_cfg.get("lkh_binary", "/content/tools/lkh/LKH")
+            print(f"[candidate cache] miss for {spec.name}; generating official LKH/POPMUSIC candidate file.")
+            print(f"[candidate cache] tsp_file={tsp_path}")
+            print(f"[candidate cache] candidate_file={cand_path}")
+            cand_path = run_popmusic_candidate_generation(
+                tsp_path,
+                cand_path,
+                lkh_binary,
+                params=params,
+                timeout_s=float(lkh_cfg.get("generation_timeout_s", 900)),
+            )
+            print(f"[candidate cache] wrote {cand_path}")
         else:
-            print(f"[warning] No POPMUSIC candidate file found for {spec.name}. Falling back to kNN-{max_k} candidates.")
-            candidate_map = k_nearest_candidates(dist, max_k=max_k)
-            candidate_source = "knn_fallback_missing_file"
+            print(f"[candidate cache] hit for {spec.name}: {cand_path}")
+
+        try:
+            parsed = parse_simple_candidate_file(cand_path, n=n)
+            from llm_tsp.candidate_sets import normalize_candidates
+            candidate_map = normalize_candidates(parsed, n=n, max_k=max_k, dist=dist)
+            candidate_source = str(cand_path)
+        except Exception as e:
+            raise RuntimeError(f"Could not parse POPMUSIC candidate file for {spec.name}: {cand_path}") from e
 
         raw_prior = prior_from_candidate_frequency([candidate_map], n=n)
 
@@ -181,7 +206,6 @@ def load_problem_for_spec(cfg: dict, spec: InstanceSpec, artifact_dir: Path) -> 
         dist=dist,
         candidate_neighbors=candidate_map if use_candidates else None,
         prior_map=prior_map,
-        restrict_edge_cost_to_candidates=bool(pop.get("restrict_edge_cost_to_candidates", False)) and use_candidates,
     )
 
     row = {
@@ -192,7 +216,7 @@ def load_problem_for_spec(cfg: dict, spec: InstanceSpec, artifact_dir: Path) -> 
         "candidate_source": candidate_source,
         "use_candidates": use_candidates,
         "use_prior": use_prior,
-        "restrict_edge_cost_to_candidates": problem.restrict_edge_cost_to_candidates,
+        "candidate_edge_policy": "guidance_only_full_tour_allowed",
     }
     pd.DataFrame([row]).to_csv(artifact_dir / f"problem_{spec.name}_load_info.csv", index=False)
     print(
@@ -282,7 +306,7 @@ def make_search_instances_table(problems: list[tuple[str, SparseTSPProblem, floa
             "optimum": None if optimum is None else float(optimum),
             "has_candidate_neighbors": problem.candidate_neighbors is not None,
             "has_prior": problem.prior_map is not None,
-            "restrict_edge_cost_to_candidates": bool(problem.restrict_edge_cost_to_candidates),
+            "candidate_edge_policy": "guidance_only_full_tour_allowed",
         })
     return pd.DataFrame(rows)
 
@@ -328,7 +352,8 @@ def main() -> None:
     print(f"use_popmusic_edge_prior: {rc.use_popmusic_edge_prior}")
     print(f"popmusic_prior_mode: {rc.popmusic_prior_mode}")
     print(f"max_candidates: {rc.max_candidates}")
-    print(f"restrict_edge_cost_to_candidates: {rc.restrict_edge_cost_to_candidates}")
+    print("candidate_edge_policy: guidance_only_full_tour_allowed")
+    print("edge_cost: true full TSPLIB distance")
 
     selected_df = write_selected_instances(cfg, artifact_dir, rc.eval_split)
     print("\nSelected TSP instances:")
@@ -338,8 +363,7 @@ def main() -> None:
         missing_candidates = selected_df[selected_df["candidate_file_found"].astype(str) == ""]
         print(f"POPMUSIC candidate mode is ON. Candidate files missing for {len(missing_candidates)}/{len(selected_df)} selected instance(s).")
         if len(missing_candidates):
-            print("Missing candidate files will use kNN fallback so the LLaMEA run can still proceed.")
-            print("For final thesis runs, replace fallback candidates with the real POPMUSIC cache.")
+            print("Missing candidate files will be generated immediately with LKH/POPMUSIC during problem loading.")
 
     if rc.dry_run:
         run_dry_smoke(cfg, artifact_dir)

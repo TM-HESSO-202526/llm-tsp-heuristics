@@ -62,8 +62,6 @@ DEFAULTS: dict[str, Any] = {
     "USE_POPMUSIC_EDGE_PRIOR": True,
     "POPMUSIC_PRIOR_MODE": "frequency",
     "MAX_CANDIDATES": 20,
-    "RESTRICT_EDGE_COST_TO_CANDIDATES": True,
-    "ALLOW_NON_CANDIDATE_EDGES_IN_FINAL_TOUR": False,
     "LKH_BINARY_PATH": "/content/tools/lkh/LKH",
 
     # Reference suite: 1k+ TSPLIB instances only
@@ -159,8 +157,8 @@ def build_runtime_config_from_notebook_globals(globals_dict: dict[str, Any]) -> 
             "use_popmusic_edge_prior": _as_bool(values["USE_POPMUSIC_EDGE_PRIOR"]),
             "prior_mode": values["POPMUSIC_PRIOR_MODE"],
             "max_candidates": int(values["MAX_CANDIDATES"]),
-            "restrict_edge_cost_to_candidates": _as_bool(values["RESTRICT_EDGE_COST_TO_CANDIDATES"]),
-            "allow_non_candidate_edges_in_final_tour": _as_bool(values["ALLOW_NON_CANDIDATE_EDGES_IN_FINAL_TOUR"]),
+            # Fixed policy, matching the historical TSP notebooks:
+            # candidate lists guide the heuristic; final tours are evaluated on full TSPLIB distance.
             "lkh_binary_path": values["LKH_BINARY_PATH"],
         },
     }
@@ -208,8 +206,8 @@ def print_effective_config(effective: dict[str, Any]) -> None:
     print(f"use_popmusic_edge_prior: {pop.get('use_popmusic_edge_prior')}")
     print(f"popmusic_prior_mode: {pop.get('prior_mode')}")
     print(f"max_candidates: {pop.get('max_candidates')}")
-    print(f"restrict_edge_cost_to_candidates: {pop.get('restrict_edge_cost_to_candidates')}")
-    print(f"allow_non_candidate_edges_in_final_tour: {pop.get('allow_non_candidate_edges_in_final_tour')}")
+    print("candidate_edge_policy: guidance_only_full_tour_allowed")
+    print("edge_cost: true full TSPLIB distance")
     print(f"instance_root: {suite.get('instance_root')}")
     print(f"candidate_cache_dir: {suite.get('candidate_cache_dir')}")
     print(f"artifact_root: {suite.get('artifact_root')}")
@@ -301,6 +299,7 @@ def candidate_file_candidates(instance_name: str, candidate_root: str | Path) ->
     name = str(instance_name)
     variants = [name, name.upper(), name.lower()]
     suffixes = [
+        "_cand-popmusic-k20-s14-sol20-nn5-tr1.cand",
         ".cand",
         ".candidates",
         "_candidates.txt",
