@@ -271,17 +271,103 @@ def save_prior_npz(path: str | Path, prior: PriorMap, *, success_runs: int, atte
     return path
 
 
-def load_prior_npz(path: str | Path) -> tuple[PriorMap, dict[str, int]]:
+def _npz_scalar(data: np.lib.npyio.NpzFile, key: str, default=None):
+    if key not in data:
+        return default
+    value = data[key]
+    try:
+        arr = np.asarray(value)
+        if arr.shape == ():
+            return arr.item()
+        if arr.size == 1:
+            return arr.reshape(-1)[0].item()
+    except Exception:
+        pass
+    return value
+
+
+def _dense_prior_matrix_to_map(matrix: np.ndarray) -> PriorMap:
+    """Convert the historical dense `prior` matrix cache to sparse PriorMap.
+
+    The original notebooks saved edge priors as a dense float32 matrix under the
+    key `prior`, together with `success_runs` and `method`.  Existing Drive
+    caches therefore do not contain the newer `edge_i`/`edge_j`/`weight` arrays.
+    We keep only strictly positive off-diagonal entries and store undirected
+    edges using sorted `(a, b)` keys, which is what `SparseTSPProblem.prior(i,j)`
+    expects.
+    """
+    arr = np.asarray(matrix, dtype=np.float32)
+    if arr.ndim != 2 or arr.shape[0] != arr.shape[1]:
+        raise ValueError(f"Legacy prior matrix must be square, got shape {arr.shape}")
+    rows, cols = np.nonzero(arr > 0)
+    prior: PriorMap = {}
+    for i, j in zip(rows, cols):
+        i = int(i)
+        j = int(j)
+        if i == j:
+            continue
+        a, b = sorted((i, j))
+        w = float(arr[i, j])
+        if w > prior.get((a, b), 0.0):
+            prior[(a, b)] = w
+    return prior
+
+
+def load_prior_npz(path: str | Path) -> tuple[PriorMap, dict[str, int | str]]:
+    """Load an LKH/POPMUSIC edge-prior cache.
+
+    Supports both formats used across the project:
+
+    1. Historical notebook cache:
+       `prior=<dense float32 matrix>`, `success_runs=<int>`, `method=<str>`
+
+    2. Newer sparse cache:
+       `edge_i`, `edge_j`, `weight`, `success_runs`, `attempted_runs`, `topk`
+
+    This compatibility is important because the user's Drive already contains
+    historical `.npz` files such as
+    `{instance}_popmusic_edge_prior_runs30_topk5.npz`.
+    """
     path = Path(path)
-    data = np.load(path)
+    data = np.load(path, allow_pickle=True)
+
+    if "prior" in data:
+        prior = _dense_prior_matrix_to_map(data["prior"])
+        success_runs = _npz_scalar(data, "success_runs", -1)
+        attempted_runs = _npz_scalar(data, "attempted_runs", -1)
+        topk = _npz_scalar(data, "topk", -1)
+        method = _npz_scalar(data, "method", "legacy_dense_prior")
+        if isinstance(method, bytes):
+            method = method.decode("utf-8", errors="ignore")
+        else:
+            method = str(method)
+        meta = {
+            "format": "legacy_dense_prior",
+            "method": method,
+            "success_runs": int(success_runs) if success_runs is not None else -1,
+            "attempted_runs": int(attempted_runs) if attempted_runs is not None else -1,
+            "topk": int(topk) if topk is not None else -1,
+        }
+        return prior, meta
+
+    required = {"edge_i", "edge_j", "weight"}
+    missing = sorted(required.difference(set(data.files)))
+    if missing:
+        raise KeyError(
+            f"Edge-prior cache {path} has unsupported schema. "
+            f"Missing {missing}; available keys are {list(data.files)}"
+        )
+
     edge_i = data["edge_i"].astype(int)
     edge_j = data["edge_j"].astype(int)
     weights = data["weight"].astype(float)
     prior = {(int(i), int(j)): float(w) for i, j, w in zip(edge_i, edge_j, weights)}
     meta = {
-        "success_runs": int(data["success_runs"][0]) if "success_runs" in data else -1,
-        "attempted_runs": int(data["attempted_runs"][0]) if "attempted_runs" in data else -1,
-        "topk": int(data["topk"][0]) if "topk" in data else -1,
+        "format": "sparse_edge_list",
+        "method": str(_npz_scalar(data, "method", "sparse_edge_list")),
+        "success_runs": int(_npz_scalar(data, "success_runs", -1)),
+        "attempted_runs": int(_npz_scalar(data, "attempted_runs", -1)),
+        "topk": int(_npz_scalar(data, "topk", -1)),
     }
     return prior, meta
 

@@ -163,8 +163,14 @@ def load_problem_for_spec(cfg: dict, spec: InstanceSpec, artifact_dir: Path) -> 
     dist = tsplib_distance_matrix(coords, meta.get("EDGE_WEIGHT_TYPE"))
     n = int(dist.shape[0])
     max_k = int(pop.get("max_candidates", 20))
-    use_candidates = bool(pop.get("use_popmusic_candidates", False))
+    requested_use_candidates = bool(pop.get("use_popmusic_candidates", False))
     use_prior = bool(pop.get("use_popmusic_edge_prior", False))
+    # Historical POPMUSIC-prior experiments used both structures: the LLM sees
+    # POPMUSIC candidate lists as sparse guidance, and edge priors are an extra
+    # score signal built from short LKH tours. If the prior is enabled, candidate
+    # lists are therefore exposed even if the launcher flag was accidentally left
+    # off.
+    use_candidates = bool(requested_use_candidates or use_prior)
 
     candidate_map = None
     raw_prior = {}
@@ -269,6 +275,7 @@ def load_problem_for_spec(cfg: dict, spec: InstanceSpec, artifact_dir: Path) -> 
         "edge_weight_type": meta.get("EDGE_WEIGHT_TYPE", ""),
         "tsplib_path": str(tsp_path),
         "candidate_source": candidate_source,
+        "requested_use_candidates": requested_use_candidates,
         "use_candidates": use_candidates,
         "use_prior": use_prior,
         "edge_prior_source": edge_prior_source,
@@ -409,6 +416,7 @@ def main() -> None:
     print(f"evaluation_timeout_s: {rc.evaluation_timeout_s}")
     print(f"use_popmusic_candidates: {rc.use_popmusic_candidates}")
     print(f"use_popmusic_edge_prior: {rc.use_popmusic_edge_prior}")
+    print(f"effective_candidate_lists_exposed: {bool(rc.use_popmusic_candidates or rc.use_popmusic_edge_prior)}")
     print(f"popmusic_prior_mode: {rc.popmusic_prior_mode}")
     print(f"max_candidates: {rc.max_candidates}")
     print(f"edge_prior_cache_dir: {rc.edge_prior_cache_dir}")
@@ -420,9 +428,9 @@ def main() -> None:
     print("\nSelected TSP instances:")
     print(selected_df[["instance", "split", "optimum", "tsplib_file_found", "candidate_file_found", "edge_prior_file_found"]])
 
-    if rc.use_popmusic_candidates:
+    if rc.use_popmusic_candidates or rc.use_popmusic_edge_prior:
         missing_candidates = selected_df[selected_df["candidate_file_found"].astype(str) == ""]
-        print(f"POPMUSIC candidate mode is ON. Candidate files missing for {len(missing_candidates)}/{len(selected_df)} selected instance(s).")
+        print(f"POPMUSIC candidate lists are exposed. Candidate files missing for {len(missing_candidates)}/{len(selected_df)} selected instance(s).")
         if len(missing_candidates):
             print("Missing candidate files will be generated immediately with LKH/POPMUSIC during problem loading.")
 

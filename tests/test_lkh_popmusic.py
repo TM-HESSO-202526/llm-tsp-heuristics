@@ -56,4 +56,23 @@ def test_prior_npz_roundtrip(tmp_path):
     save_prior_npz(path, prior, success_runs=7, attempted_runs=30, topk=5)
     loaded, meta = load_prior_npz(path)
     assert loaded == prior
-    assert meta == {"success_runs": 7, "attempted_runs": 30, "topk": 5}
+    assert meta["success_runs"] == 7
+    assert meta["attempted_runs"] == 30
+    assert meta["topk"] == 5
+    assert meta["format"] == "sparse_edge_list"
+
+
+def test_legacy_dense_prior_npz_loads(tmp_path):
+    import numpy as np
+
+    path = tmp_path / "legacy_prior.npz"
+    mat = np.zeros((4, 4), dtype=np.float32)
+    mat[0, 1] = mat[1, 0] = 0.7
+    mat[2, 3] = mat[3, 2] = 0.2
+    np.savez_compressed(path, prior=mat, success_runs=30, method="popmusic_tour_frequency")
+    loaded, meta = load_prior_npz(path)
+    assert abs(loaded[(0, 1)] - 0.7) < 1e-6
+    assert abs(loaded[(2, 3)] - 0.2) < 1e-6
+    assert meta["format"] == "legacy_dense_prior"
+    assert meta["success_runs"] == 30
+    assert meta["method"] == "popmusic_tour_frequency"
