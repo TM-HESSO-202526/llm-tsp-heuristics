@@ -38,9 +38,8 @@ The TSP-specific block tells the LLM that it receives a `problem` object with:
 
 - `problem.n`
 - `problem.edge_cost(i, j)`
-- `problem.full_edge_cost(i, j)`
 - `problem.neighbors(i)`
 - `problem.prior(i, j)`
 - `problem.coords`
 
-When POPMUSIC candidates are active, the prompt asks the LLM to prefer sparse candidate neighborhoods and the optional edge-prior signal. This is the TSP equivalent of activating a major experimental mode in the clustering launcher.
+When POPMUSIC candidates are active, the prompt tells the LLM that it receives sparse candidate lists through `problem.neighbors(i)`, not a full dense distance matrix. The final tour may still contain non-candidate edges and is evaluated on the true TSPLIB distance. When the edge prior is active, `problem.prior(i, j)` comes from the historical 30-run LKH/POPMUSIC tour-frequency cache, not from the candidate list alone.

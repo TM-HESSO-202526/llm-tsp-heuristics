@@ -80,6 +80,11 @@ class RuntimeConfig:
     # POPMUSIC/LKH candidates are exposed as guidance through problem.neighbors(i).
     # Final tours are normal TSP permutations and are always evaluated on the true full TSPLIB distance.
     lkh_binary_path: str = "/content/tools/lkh/LKH"
+    edge_prior_cache_dir: str = "/content/drive/MyDrive/TM/LKH_edge_prior_cache"
+    edge_prior_runs: int = 30
+    edge_prior_time_limit_s: float = 1.0
+    edge_prior_topk: int = 5
+    edge_prior_force_rebuild: bool = False
 
     # Paths.
     instance_root: str = "/content/drive/MyDrive/TM/TSP_instances"
@@ -125,6 +130,11 @@ def flatten_runtime_config(cfg: dict[str, Any]) -> RuntimeConfig:
         popmusic_prior_mode=str(pop.get("prior_mode", "none")),
         max_candidates=int(pop.get("max_candidates", 20)),
         lkh_binary_path=str(pop.get("lkh_binary_path", cfg.get("lkh", {}).get("lkh_binary", "/content/tools/lkh/LKH"))),
+        edge_prior_cache_dir=str(suite.get("edge_prior_cache_dir", pop.get("edge_prior_cache_dir", "/content/drive/MyDrive/TM/LKH_edge_prior_cache"))),
+        edge_prior_runs=int(pop.get("edge_prior_runs", cfg.get("edge_prior", {}).get("runs", 30))),
+        edge_prior_time_limit_s=float(pop.get("edge_prior_time_limit_s", cfg.get("edge_prior", {}).get("time_limit_s", 1.0))),
+        edge_prior_topk=int(pop.get("edge_prior_topk", cfg.get("edge_prior", {}).get("topk", 5))),
+        edge_prior_force_rebuild=bool(pop.get("edge_prior_force_rebuild", cfg.get("edge_prior", {}).get("force_rebuild", False))),
         instance_root=str(suite.get("instance_root", "/content/drive/MyDrive/TM/TSP_instances")),
         candidate_cache_dir=str(suite.get("candidate_cache_dir", "/content/drive/MyDrive/TM/LKH_candidate_cache")),
         artifact_root=str(suite.get("artifact_root", "/content/drive/MyDrive/TM/llm-tsp-runs")),

@@ -25,7 +25,7 @@ def prior_greedy(problem: SparseTSPProblem, start: int = 0, alpha: float = 0.7) 
     unvisited = set(range(n))
     tour = [int(start)]
     unvisited.remove(int(start))
-    max_d = float(np.max(problem.dist)) or 1.0
+    max_d = float(np.max(problem.distance_matrix_for_evaluator())) or 1.0
     while unvisited:
         i = tour[-1]
         choices = [j for j in problem.neighbors(i) if j in unvisited]

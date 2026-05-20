@@ -21,6 +21,9 @@ class EvaluationResult:
     error: str | None = None
     traceback: str | None = None
     uses_only_candidates: bool | None = None
+    candidate_edge_count: int | None = None
+    total_edges: int | None = None
+    candidate_edge_share: float | None = None
 
 
 class CandidateTimeoutError(TimeoutError):
@@ -128,8 +131,10 @@ def evaluate_code_on_problem(
             rng = np.random.default_rng(seed)
             tour = fn(problem, rng=rng)
             validate_tour(tour, problem.n)
-            uses_only_candidates = problem.tour_uses_only_candidates(tour)
-            cost = tour_cost_from_matrix(tour, problem.dist)
+            candidate_edge_count, total_edges = problem.tour_candidate_edge_count(tour)
+            uses_only_candidates = bool(total_edges and candidate_edge_count == total_edges)
+            candidate_edge_share = (float(candidate_edge_count) / float(total_edges)) if total_edges else None
+            cost = tour_cost_from_matrix(tour, problem.distance_matrix_for_evaluator())
             gap = None
             if optimum and optimum > 0:
                 gap = 100.0 * (cost - float(optimum)) / float(optimum)
@@ -139,6 +144,9 @@ def evaluate_code_on_problem(
             gap_percent=gap,
             runtime_s=time.time() - start,
             uses_only_candidates=uses_only_candidates,
+            candidate_edge_count=candidate_edge_count,
+            total_edges=total_edges,
+            candidate_edge_share=candidate_edge_share,
         )
     except Exception as e:
         return EvaluationResult(

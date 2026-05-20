@@ -342,6 +342,9 @@ def _instance_result_row(
         "error": result.error,
         "traceback": result.traceback,
         "uses_only_candidates": result.uses_only_candidates,
+        "candidate_edge_count": result.candidate_edge_count,
+        "total_edges": result.total_edges,
+        "candidate_edge_share": _safe_float(result.candidate_edge_share),
         **record_seed,
     }
 
@@ -357,7 +360,9 @@ def _format_instance_feedback(rows: list[dict[str, Any]]) -> str:
             cost_txt = "NA" if cost is None else f"{float(cost):.6g}"
             rt = row["runtime_s"]
             rt_txt = "NA" if rt is None else f"{float(rt):.3f}s"
-            lines.append(f"{name}: valid 1/1, gap_vs_opt={gap_txt}, cost={cost_txt}, runtime={rt_txt}")
+            cand_share = row.get("candidate_edge_share")
+            cand_txt = "NA" if cand_share is None else f"{100.0 * float(cand_share):.1f}% candidate-edges"
+            lines.append(f"{name}: valid 1/1, gap_vs_opt={gap_txt}, cost={cost_txt}, runtime={rt_txt}, {cand_txt}")
         else:
             err = str(row.get("error") or "invalid")
             tb = str(row.get("traceback") or "")

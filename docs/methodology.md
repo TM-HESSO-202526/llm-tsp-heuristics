@@ -42,11 +42,11 @@ The `problem` object exposes:
 - `problem.prior(i, j)`
 - `problem.coords`
 
-If candidate restriction is active, `edge_cost(i, j)` is only guaranteed for candidate edges. This encourages heuristics to stay within sparse candidate sets.
+When POPMUSIC candidate mode is active, the LLM receives sparse candidate lists through `problem.neighbors(i)`, not a full dense distance matrix. `problem.edge_cost(i, j)` remains a true TSPLIB edge-cost oracle for individual edges. Candidate lists guide construction, but the returned tour is a normal TSP permutation and is evaluated on the true full TSPLIB distance.
 
 ## Why POPMUSIC matters
 
-The main TSP thesis lesson was that unrestricted LLM generation often rediscovers standard constructive families. The POPMUSIC/LKH layer provides operational structure: candidate edges and edge-frequency priors. The LLM can then use a more informative construction environment rather than starting from an unconstrained dense graph.
+The main TSP thesis lesson was that unrestricted LLM generation often rediscovers standard constructive families. The POPMUSIC/LKH layer provides operational structure: candidate lists and tour-frequency edge priors. The LLM can then use a more informative construction environment rather than starting from an unconstrained dense graph.
 
 ## LLaMEA parent-selection strategies
 

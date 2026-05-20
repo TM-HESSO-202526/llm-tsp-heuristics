@@ -33,11 +33,11 @@ def objective_prompt_block(config: dict[str, Any]) -> str:
         "",
         "Problem object seen by your code:",
         "- problem.n: number of cities.",
-        "- problem.edge_cost(i, j): true full TSPLIB edge cost.",
-        "- problem.full_edge_cost(i, j): same true full TSPLIB edge cost; kept as an explicit alias.",
+        "- problem.edge_cost(i, j): true TSPLIB edge-cost query for one edge at a time.",
         "- problem.neighbors(i): sparse POPMUSIC/LKH candidate-neighbor list for city i when candidate mode is active.",
-        "- problem.prior(i, j): optional POPMUSIC/LKH edge-support signal.",
+        "- problem.prior(i, j): optional POPMUSIC/LKH tour-frequency edge-support signal.",
         "- problem.coords: city coordinates as a numpy array when available.",
+        "The full dense distance matrix is not part of the public interface; use bounded edge_cost queries and candidate lists.",
     ]
     if pop.get("use_popmusic_candidates"):
         lines += [
@@ -45,7 +45,8 @@ def objective_prompt_block(config: dict[str, Any]) -> str:
             "POPMUSIC/LKH candidate mode is active.",
             "Use problem.neighbors(i) as the main sparse neighborhood for local choices.",
             "Candidate lists are guidance, not a hard final-tour feasibility constraint.",
-            "problem.edge_cost(i, j) still returns the true full TSPLIB edge cost; use dense edge-cost scans only when tightly bounded.",
+            "The LLM receives the sparse candidate list, not a full dense distance matrix.",
+            "problem.edge_cost(i, j) is an oracle-style query for individual edge costs; avoid dense all-pairs scans.",
             "The final returned tour is a normal full TSP permutation and is evaluated on the true full TSPLIB distance.",
         ]
     if pop.get("use_popmusic_edge_prior"):
@@ -53,7 +54,7 @@ def objective_prompt_block(config: dict[str, Any]) -> str:
             "",
             "POPMUSIC edge-prior mode is active.",
             f"Prior mode: {pop.get('prior_mode', 'frequency')}",
-            "problem.prior(i, j) gives an operational edge-support signal derived from POPMUSIC/LKH candidate behavior.",
+            "problem.prior(i, j) gives an operational edge-support signal built from 30 short LKH/POPMUSIC tour runs by counting edge frequencies.",
             "Use the prior as a helpful construction signal, while still controlling distance, degree balance, tour validity, and runtime.",
         ]
     return "\n".join(lines).strip()

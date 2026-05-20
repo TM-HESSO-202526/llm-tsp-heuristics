@@ -2,8 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 from dataclasses import dataclass
+from collections import defaultdict
 import shutil
 import subprocess
+import numpy as np
+
+from .candidate_sets import PriorMap, binary_topk_prior
 
 
 @dataclass(frozen=True)
@@ -14,6 +18,17 @@ class PopmusicParams:
     popmusic_max_neighbors: int = 5
     popmusic_trials: int = 1
     popmusic_initial_tour: bool = False
+
+
+@dataclass(frozen=True)
+class EdgePriorParams:
+    runs: int = 30
+    time_limit_s: float = 1.0
+    topk: int = 5
+    move_type: int = 5
+    patching_a: int = 2
+    patching_c: int = 3
+    force_rebuild: bool = False
 
 
 def popmusic_candidate_file_name(
@@ -32,6 +47,17 @@ def popmusic_candidate_file_name(
         f"-tr{params.popmusic_trials}.cand"
     )
     return root / stem
+
+
+def popmusic_edge_prior_file_name(
+    instance_name: str,
+    edge_prior_root: str | Path,
+    params: EdgePriorParams = EdgePriorParams(),
+) -> Path:
+    """Historical LKH/POPMUSIC tour-frequency prior-cache filename."""
+    return Path(edge_prior_root) / (
+        f"{instance_name}_popmusic_edge_prior_runs{params.runs}_topk{params.topk}.npz"
+    )
 
 
 def write_lkh_parameter_file(
@@ -62,12 +88,45 @@ def write_lkh_parameter_file(
     return par_file
 
 
-def ensure_lkh_binary(lkh_binary: str | Path, *, build_if_missing: bool = True, timeout_s: float = 600.0) -> Path:
-    """Return a usable LKH binary, building it in Colab if it is missing.
+def write_edge_prior_lkh_parameter_file(
+    tsp_file: str | Path,
+    par_file: str | Path,
+    output_tour_file: str | Path,
+    *,
+    seed: int,
+    popmusic: PopmusicParams = PopmusicParams(),
+    prior: EdgePriorParams = EdgePriorParams(),
+) -> Path:
+    """Write the historical short-run LKH .par file used to build edge priors."""
+    tsp_file = Path(tsp_file)
+    par_file = Path(par_file)
+    output_tour_file = Path(output_tour_file)
+    par_file.parent.mkdir(parents=True, exist_ok=True)
+    output_tour_file.parent.mkdir(parents=True, exist_ok=True)
+    lines = [
+        f"PROBLEM_FILE = {tsp_file}",
+        "CANDIDATE_SET_TYPE = POPMUSIC",
+        f"MAX_CANDIDATES = {popmusic.max_candidates}",
+        f"POPMUSIC_SAMPLE_SIZE = {popmusic.popmusic_sample_size}",
+        f"POPMUSIC_SOLUTIONS = {popmusic.popmusic_solutions}",
+        f"POPMUSIC_MAX_NEIGHBORS = {popmusic.popmusic_max_neighbors}",
+        f"POPMUSIC_TRIALS = {popmusic.popmusic_trials}",
+        f"POPMUSIC_INITIAL_TOUR = {'YES' if popmusic.popmusic_initial_tour else 'NO'}",
+        "RUNS = 1",
+        f"MOVE_TYPE = {prior.move_type}",
+        f"PATCHING_A = {prior.patching_a}",
+        f"PATCHING_C = {prior.patching_c}",
+        f"SEED = {int(seed)}",
+        f"TIME_LIMIT = {float(prior.time_limit_s)}",
+        "TRACE_LEVEL = 0",
+        f"OUTPUT_TOUR_FILE = {output_tour_file}",
+    ]
+    par_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return par_file
 
-    The main pipeline uses this only when POPMUSIC candidate files are missing
-    and candidate mode is active. Existing binaries are never rebuilt.
-    """
+
+def ensure_lkh_binary(lkh_binary: str | Path, *, build_if_missing: bool = True, timeout_s: float = 600.0) -> Path:
+    """Return a usable LKH 3.0.8 binary, building it in Colab if missing."""
     target = Path(lkh_binary)
     if target.exists():
         return target
@@ -83,13 +142,14 @@ def ensure_lkh_binary(lkh_binary: str | Path, *, build_if_missing: bool = True, 
     tools_dir.mkdir(parents=True, exist_ok=True)
     target.parent.mkdir(parents=True, exist_ok=True)
 
-    # Try both historical LKH hosting URLs used in Colab notebooks.
+    # Historical Colab workflow: install tools, download LKH-3.0.8, make, copy binary.
     script = f"""
 set -euo pipefail
 cd {tools_dir}
 if [ ! -d LKH-3.0.8 ]; then
   rm -f LKH-3.0.8.tgz
   (wget -q -O LKH-3.0.8.tgz http://akira.ruc.dk/~keld/research/LKH-3/LKH-3.0.8.tgz \
+   || wget -q -O LKH-3.0.8.tgz https://webhotel4.ruc.dk/~keld/research/LKH-3/LKH-3.0.8.tgz \
    || wget -q -O LKH-3.0.8.tgz http://webhotel4.ruc.dk/~keld/research/LKH-3/LKH-3.0.8.tgz)
   tar xzf LKH-3.0.8.tgz
 fi
@@ -120,7 +180,7 @@ def run_popmusic_candidate_generation(
     params: PopmusicParams = PopmusicParams(),
     timeout_s: float = 900.0,
 ) -> Path:
-    """Generate a POPMUSIC/LKH candidate file and return its path."""
+    """Generate a historical LKH/POPMUSIC CANDIDATE_FILE and return its path."""
     tsp_file = Path(tsp_file)
     candidate_file = Path(candidate_file)
     candidate_file.parent.mkdir(parents=True, exist_ok=True)
@@ -149,3 +209,168 @@ def run_popmusic_candidate_generation(
             f"LKH finished but did not create a non-empty candidate file at {candidate_file}. See {log_file}"
         )
     return candidate_file
+
+
+def parse_lkh_tour_file(path: str | Path) -> list[int]:
+    """Parse a 1-based LKH TOUR_SECTION output file and return a 0-based tour."""
+    path = Path(path)
+    if not path.exists() or path.stat().st_size == 0:
+        return []
+    text = path.read_text(encoding="utf-8", errors="ignore").splitlines()
+    in_section = False
+    nodes: list[int] = []
+    for raw in text:
+        line = raw.strip()
+        upper = line.upper()
+        if not line:
+            continue
+        if upper.startswith("TOUR_SECTION"):
+            in_section = True
+            continue
+        if upper.startswith("EOF"):
+            break
+        if not in_section:
+            continue
+        for tok in line.replace(",", " ").split():
+            try:
+                val = int(tok)
+            except ValueError:
+                continue
+            if val == -1:
+                return [x - 1 for x in nodes]
+            if val > 0:
+                nodes.append(val)
+    return [x - 1 for x in nodes]
+
+
+def _topk_symmetrized_prior(counts: dict[tuple[int, int], float], n: int, success_runs: int, topk: int) -> PriorMap:
+    if success_runs <= 0 or not counts:
+        return {}
+    raw = {edge: float(val) / float(success_runs) for edge, val in counts.items()}
+    if topk and topk > 0:
+        return binary_topk_prior(raw, k_per_node=int(topk), n=n) | {
+            edge: raw[edge] for edge in binary_topk_prior(raw, k_per_node=int(topk), n=n).keys()
+        }
+    return raw
+
+
+def save_prior_npz(path: str | Path, prior: PriorMap, *, success_runs: int, attempted_runs: int, topk: int) -> Path:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    edges = np.array(list(prior.keys()), dtype=np.int64) if prior else np.zeros((0, 2), dtype=np.int64)
+    weights = np.array([prior[tuple(edge)] for edge in map(tuple, edges)], dtype=np.float64) if len(edges) else np.zeros((0,), dtype=np.float64)
+    np.savez_compressed(
+        path,
+        edge_i=edges[:, 0] if len(edges) else np.zeros((0,), dtype=np.int64),
+        edge_j=edges[:, 1] if len(edges) else np.zeros((0,), dtype=np.int64),
+        weight=weights,
+        success_runs=np.array([success_runs], dtype=np.int64),
+        attempted_runs=np.array([attempted_runs], dtype=np.int64),
+        topk=np.array([topk], dtype=np.int64),
+    )
+    return path
+
+
+def load_prior_npz(path: str | Path) -> tuple[PriorMap, dict[str, int]]:
+    path = Path(path)
+    data = np.load(path)
+    edge_i = data["edge_i"].astype(int)
+    edge_j = data["edge_j"].astype(int)
+    weights = data["weight"].astype(float)
+    prior = {(int(i), int(j)): float(w) for i, j, w in zip(edge_i, edge_j, weights)}
+    meta = {
+        "success_runs": int(data["success_runs"][0]) if "success_runs" in data else -1,
+        "attempted_runs": int(data["attempted_runs"][0]) if "attempted_runs" in data else -1,
+        "topk": int(data["topk"][0]) if "topk" in data else -1,
+    }
+    return prior, meta
+
+
+def run_popmusic_edge_prior_generation(
+    tsp_file: str | Path,
+    prior_file: str | Path,
+    lkh_binary: str | Path,
+    *,
+    n: int,
+    base_seed: int,
+    popmusic: PopmusicParams = PopmusicParams(),
+    prior_params: EdgePriorParams = EdgePriorParams(),
+    timeout_s: float = 1800.0,
+) -> Path:
+    """Generate the historical LKH/POPMUSIC tour-frequency edge prior cache.
+
+    For each short LKH run, this writes a separate .par file containing:
+    CANDIDATE_SET_TYPE=POPMUSIC, MAX_CANDIDATES, POPMUSIC_*, RUNS=1,
+    MOVE_TYPE=5, PATCHING_A=2, PATCHING_C=3, SEED, TIME_LIMIT=1.0,
+    TRACE_LEVEL=0, and OUTPUT_TOUR_FILE.
+
+    Successful tours are parsed and edge frequencies are counted symmetrically.
+    The resulting prior is saved as the historical .npz cache file.
+    """
+    tsp_file = Path(tsp_file)
+    prior_file = Path(prior_file)
+    prior_file.parent.mkdir(parents=True, exist_ok=True)
+    binary = ensure_lkh_binary(lkh_binary, build_if_missing=True, timeout_s=min(float(timeout_s), 900.0))
+
+    work_dir = prior_file.parent / (prior_file.stem + "_work")
+    work_dir.mkdir(parents=True, exist_ok=True)
+    log_dir = work_dir / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    counts: dict[tuple[int, int], float] = defaultdict(float)
+    success_runs = 0
+    attempted = int(prior_params.runs)
+    per_run_rows = []
+
+    for r in range(attempted):
+        seed = int(base_seed) + r
+        par_file = work_dir / f"run_{r+1:03d}.par"
+        tour_file = work_dir / f"run_{r+1:03d}.tour"
+        write_edge_prior_lkh_parameter_file(
+            tsp_file,
+            par_file,
+            tour_file,
+            seed=seed,
+            popmusic=popmusic,
+            prior=prior_params,
+        )
+        try:
+            proc = subprocess.run(
+                [str(binary), str(par_file)],
+                text=True,
+                capture_output=True,
+                timeout=max(30.0, float(prior_params.time_limit_s) + 20.0),
+            )
+            (log_dir / f"run_{r+1:03d}.log").write_text(
+                "STDOUT\n======\n" + proc.stdout + "\n\nSTDERR\n======\n" + proc.stderr,
+                encoding="utf-8",
+            )
+            tour = parse_lkh_tour_file(tour_file)
+            ok = proc.returncode == 0 and len(tour) == n and len(set(tour)) == n
+            if ok:
+                success_runs += 1
+                for k, a in enumerate(tour):
+                    b = tour[(k + 1) % n]
+                    if a == b:
+                        continue
+                    edge = tuple(sorted((int(a), int(b))))
+                    counts[edge] += 1.0
+            per_run_rows.append((r + 1, seed, int(proc.returncode), len(tour), bool(ok)))
+        except subprocess.TimeoutExpired:
+            (log_dir / f"run_{r+1:03d}.timeout").write_text("timeout\n", encoding="utf-8")
+            per_run_rows.append((r + 1, seed, -999, 0, False))
+
+    if success_runs == 0:
+        raise RuntimeError(
+            f"No successful LKH tours were produced while generating edge prior for {tsp_file.name}. "
+            f"Check {work_dir}."
+        )
+
+    prior = _topk_symmetrized_prior(counts, n=n, success_runs=success_runs, topk=int(prior_params.topk))
+    save_prior_npz(prior_file, prior, success_runs=success_runs, attempted_runs=attempted, topk=int(prior_params.topk))
+
+    # Lightweight CSV log without a pandas dependency in this module.
+    lines = ["run,seed,returncode,tour_len,success"]
+    lines += [f"{a},{b},{c},{d},{e}" for a, b, c, d, e in per_run_rows]
+    (work_dir / "edge_prior_runs.csv").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return prior_file

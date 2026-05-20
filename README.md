@@ -8,7 +8,7 @@ The goal is **not** to package every historical notebook or every failed run. Th
 
 ## Core idea
 
-An LLM proposes executable Python heuristic code. The code is evaluated automatically on a fixed TSPLIB split. The result is fed back to the next LLM call, optionally including invalid code and error traces. This is the same research pattern used later in the clustering repo: generate, evaluate, summarize, and iterate.
+An LLM proposes executable Python heuristic code. The code is evaluated automatically on a fixed TSPLIB split. The result is fed back to the next LLM call using the same invalid-parent redesign controls as the clustering repo. This is the same research pattern used later in the clustering repo: generate, evaluate, summarize, and iterate.
 
 The TSP-specific addition is a switchable POPMUSIC/LKH layer inside the same LLaMEA loop:
 
@@ -19,7 +19,9 @@ POPMUSIC_PRIOR_MODE = "frequency"  # none, frequency, binary_topk, shuffled
 MAX_CANDIDATES = 20
 ```
 
-With these flags, the same LLaMEA loop can be run in dense mode, candidate-guided mode, or candidate-guided mode with a POPMUSIC edge prior. When candidate mode is active, missing POPMUSIC/LKH candidate files are generated automatically into the cache before the LLaMEA loop evaluates candidates. Candidate edges guide construction, but final returned tours are normal TSP tours and may include non-candidate edges; they are always evaluated on the true full TSPLIB distance.
+With these flags, the same LLaMEA loop can be run in dense mode, candidate-guided mode, or candidate-guided mode with a POPMUSIC edge prior. When candidate mode is active, missing POPMUSIC/LKH candidate files are generated automatically into the cache before the LLaMEA loop evaluates candidates. The LLM receives sparse candidate lists through `problem.neighbors(i)`, not a full dense distance matrix. Candidate edges guide construction, but final returned tours are normal TSP tours and may include non-candidate edges; they are always evaluated on the true full TSPLIB distance.
+
+When edge-prior mode is active, the prior is generated using the historical procedure: 30 short LKH/POPMUSIC runs with `MOVE_TYPE = 5`, `PATCHING_A = 2`, `PATCHING_C = 3`, `TIME_LIMIT = 1.0`, and `OUTPUT_TOUR_FILE`; successful tours are parsed, tour edges are counted symmetrically, and the cache is saved as `/content/drive/MyDrive/TM/LKH_edge_prior_cache/{instance}_popmusic_edge_prior_runs30_topk5.npz`.
 
 ## Instance policy
 
@@ -127,8 +129,8 @@ This first clean version does **not** include the fixed scaffold/hook experiment
 
 1. the LLaMEA-style generation loop;
 2. the 1k+ TSPLIB split;
-3. optional POPMUSIC/LKH candidate sets;
-4. optional POPMUSIC edge-prior information;
+3. optional POPMUSIC/LKH candidate sets generated/cached with the historical LKH-3.0.8 workflow;
+4. optional POPMUSIC/LKH tour-frequency edge-prior information generated from 30 short LKH runs;
 5. selected clean summaries from historical prior/candidate experiments.
 
 ## Thesis framing

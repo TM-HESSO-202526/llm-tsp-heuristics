@@ -52,3 +52,12 @@ lkh:
   popmusic_trials: 1
   popmusic_initial_tour: false
   generation_timeout_s: 900
+
+edge_prior:
+  runs: 30
+  time_limit_s: 1.0
+  topk: 5
+  move_type: 5
+  patching_a: 2
+  patching_c: 3
+  force_rebuild: false

@@ -55,6 +55,7 @@ DEFAULTS: dict[str, Any] = {
     # TSP data / artifact paths
     "INSTANCE_ROOT": "/content/drive/MyDrive/TM/TSP_instances",
     "CANDIDATE_CACHE_DIR": "/content/drive/MyDrive/TM/LKH_candidate_cache",
+    "EDGE_PRIOR_CACHE_DIR": "/content/drive/MyDrive/TM/LKH_edge_prior_cache",
     "ARTIFACT_ROOT": "/content/drive/MyDrive/TM/llm-tsp-runs",
 
     # POPMUSIC/candidate-prior controls
@@ -63,6 +64,10 @@ DEFAULTS: dict[str, Any] = {
     "POPMUSIC_PRIOR_MODE": "frequency",
     "MAX_CANDIDATES": 20,
     "LKH_BINARY_PATH": "/content/tools/lkh/LKH",
+    "EDGE_PRIOR_RUNS": 30,
+    "EDGE_PRIOR_TIME_LIMIT_S": 1.0,
+    "EDGE_PRIOR_TOPK": 5,
+    "EDGE_PRIOR_FORCE_REBUILD": False,
 
     # Reference suite: 1k+ TSPLIB instances only
     "TRAIN_INSTANCES": ["dsj1000", "pr1002", "d1291"],
@@ -144,6 +149,7 @@ def build_runtime_config_from_notebook_globals(globals_dict: dict[str, Any]) -> 
         "suite": {
             "instance_root": values["INSTANCE_ROOT"],
             "candidate_cache_dir": values["CANDIDATE_CACHE_DIR"],
+            "edge_prior_cache_dir": values["EDGE_PRIOR_CACHE_DIR"],
             "artifact_root": values["ARTIFACT_ROOT"],
             "splits": {
                 "train": list(values["TRAIN_INSTANCES"]),
@@ -160,6 +166,20 @@ def build_runtime_config_from_notebook_globals(globals_dict: dict[str, Any]) -> 
             # Fixed policy, matching the historical TSP notebooks:
             # candidate lists guide the heuristic; final tours are evaluated on full TSPLIB distance.
             "lkh_binary_path": values["LKH_BINARY_PATH"],
+            "edge_prior_cache_dir": values["EDGE_PRIOR_CACHE_DIR"],
+            "edge_prior_runs": int(values["EDGE_PRIOR_RUNS"]),
+            "edge_prior_time_limit_s": float(values["EDGE_PRIOR_TIME_LIMIT_S"]),
+            "edge_prior_topk": int(values["EDGE_PRIOR_TOPK"]),
+            "edge_prior_force_rebuild": _as_bool(values["EDGE_PRIOR_FORCE_REBUILD"]),
+        },
+        "edge_prior": {
+            "runs": int(values["EDGE_PRIOR_RUNS"]),
+            "time_limit_s": float(values["EDGE_PRIOR_TIME_LIMIT_S"]),
+            "topk": int(values["EDGE_PRIOR_TOPK"]),
+            "move_type": 5,
+            "patching_a": 2,
+            "patching_c": 3,
+            "force_rebuild": _as_bool(values["EDGE_PRIOR_FORCE_REBUILD"]),
         },
     }
     out = Path(tempfile.gettempdir()) / f"{values['RUN_NAME']}_runtime_config.yaml"
@@ -206,8 +226,10 @@ def print_effective_config(effective: dict[str, Any]) -> None:
     print(f"use_popmusic_edge_prior: {pop.get('use_popmusic_edge_prior')}")
     print(f"popmusic_prior_mode: {pop.get('prior_mode')}")
     print(f"max_candidates: {pop.get('max_candidates')}")
+    print(f"edge_prior_cache_dir: {suite.get('edge_prior_cache_dir')}")
+    print(f"edge_prior_runs: {pop.get('edge_prior_runs')} | time_limit_s: {pop.get('edge_prior_time_limit_s')} | topk: {pop.get('edge_prior_topk')}")
     print("candidate_edge_policy: guidance_only_full_tour_allowed")
-    print("edge_cost: true full TSPLIB distance")
+    print("problem interface: sparse candidates + edge-cost oracle; no public dense distance matrix")
     print(f"instance_root: {suite.get('instance_root')}")
     print(f"candidate_cache_dir: {suite.get('candidate_cache_dir')}")
     print(f"artifact_root: {suite.get('artifact_root')}")
@@ -314,6 +336,32 @@ def candidate_file_candidates(instance_name: str, candidate_root: str | Path) ->
         for suffix in suffixes:
             paths.append(root / f"{stem}{suffix}")
         # Also accept candidate files inside a per-instance directory.
+        for suffix in suffixes:
+            paths.append(root / stem / f"{stem}{suffix}")
+    out: list[Path] = []
+    seen: set[str] = set()
+    for path in paths:
+        key = str(path)
+        if key not in seen:
+            out.append(path)
+            seen.add(key)
+    return out
+
+
+def edge_prior_file_candidates(instance_name: str, edge_prior_root: str | Path) -> list[Path]:
+    """Historical LKH/POPMUSIC edge-prior cache locations for one instance."""
+    root = Path(edge_prior_root)
+    name = str(instance_name)
+    variants = [name, name.upper(), name.lower()]
+    suffixes = [
+        "_popmusic_edge_prior_runs30_topk5.npz",
+        "_edge_prior_runs30_topk5.npz",
+        "_edge_prior.npz",
+    ]
+    paths: list[Path] = []
+    for stem in variants:
+        for suffix in suffixes:
+            paths.append(root / f"{stem}{suffix}")
         for suffix in suffixes:
             paths.append(root / stem / f"{stem}{suffix}")
     out: list[Path] = []

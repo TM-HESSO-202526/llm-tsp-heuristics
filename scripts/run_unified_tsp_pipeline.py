@@ -23,7 +23,12 @@ from llm_tsp.candidate_sets import (
     prior_from_candidate_frequency,
 )
 from llm_tsp.priors import transform_prior
-from llm_tsp.lkh_popmusic import PopmusicParams, popmusic_candidate_file_name, run_popmusic_candidate_generation
+from llm_tsp.lkh_popmusic import (
+    PopmusicParams, EdgePriorParams,
+    popmusic_candidate_file_name, popmusic_edge_prior_file_name,
+    run_popmusic_candidate_generation, run_popmusic_edge_prior_generation,
+    load_prior_npz,
+)
 from llm_tsp.baselines import nearest_neighbor, prior_greedy
 from llm_tsp.suite import specs_from_suite_config, filter_specs, InstanceSpec
 from llm_tsp.tsplib_io import read_tsplib_coords
@@ -56,13 +61,13 @@ def run_dry_smoke(cfg: dict, artifact_dir: Path) -> None:
         max_k=int(pop.get("max_candidates", 20)),
     )
     tour = nearest_neighbor(problem)
-    nn_cost = tour_cost_from_matrix(tour, problem.dist)
+    nn_cost = tour_cost_from_matrix(tour, problem.distance_matrix_for_evaluator())
     rows = [{"method": "nearest_neighbor", "n": problem.n, "cost": float(nn_cost)}]
     print("Dry-run smoke test")
     print(f"n={problem.n} nearest_neighbor_cost={nn_cost:.3f}")
     if pop.get("use_popmusic_edge_prior"):
         tour2 = prior_greedy(problem)
-        prior_cost = tour_cost_from_matrix(tour2, problem.dist)
+        prior_cost = tour_cost_from_matrix(tour2, problem.distance_matrix_for_evaluator())
         rows.append({"method": "prior_greedy_placeholder", "n": problem.n, "cost": float(prior_cost)})
         print(f"prior_greedy_cost={prior_cost:.3f}")
     pd.DataFrame(rows).to_csv(artifact_dir / "dry_run_smoke_results.csv", index=False)
@@ -76,6 +81,15 @@ def candidate_paths_for_instance(instance_name: str, root: Path, params: Popmusi
         root / f"{instance_name}.candidates",
         root / f"{instance_name}_candidates.txt",
         root / f"{instance_name}.txt",
+    ]
+
+
+
+def edge_prior_paths_for_instance(instance_name: str, root: Path) -> list[Path]:
+    return [
+        root / f"{instance_name}_popmusic_edge_prior_runs30_topk5.npz",
+        root / f"{instance_name}_edge_prior_runs30_topk5.npz",
+        root / f"{instance_name}_edge_prior.npz",
     ]
 
 
@@ -110,11 +124,13 @@ def write_selected_instances(cfg: dict, artifact_dir: Path, eval_split: str) -> 
     suite = cfg.get("suite", {})
     instance_root = Path(suite.get("instance_root", ""))
     candidate_root = Path(suite.get("candidate_cache_dir", ""))
+    edge_prior_root = Path(suite.get("edge_prior_cache_dir", "/content/drive/MyDrive/TM/LKH_edge_prior_cache"))
     selected = selected_specs(cfg, eval_split)
     rows = []
     for spec in selected:
         tsplib_candidates = tsplib_paths_for_instance(spec.name, instance_root)
         candidate_candidates = candidate_paths_for_instance(spec.name, candidate_root)
+        edge_prior_candidates = edge_prior_paths_for_instance(spec.name, edge_prior_root)
         rows.append({
             "instance": spec.name,
             "split": spec.split,
@@ -123,6 +139,8 @@ def write_selected_instances(cfg: dict, artifact_dir: Path, eval_split: str) -> 
             "tsplib_first_expected": str(tsplib_candidates[0]),
             "candidate_file_found": select_existing(candidate_candidates),
             "candidate_first_expected": str(candidate_candidates[0]),
+            "edge_prior_file_found": select_existing(edge_prior_candidates),
+            "edge_prior_first_expected": str(edge_prior_candidates[0]),
         })
     df = pd.DataFrame(rows)
     df.to_csv(artifact_dir / "selected_instances.csv", index=False)
@@ -151,23 +169,36 @@ def load_problem_for_spec(cfg: dict, spec: InstanceSpec, artifact_dir: Path) -> 
     candidate_map = None
     raw_prior = {}
     candidate_source = "none"
+    edge_prior_source = "none"
+    edge_prior_meta = {}
+
+    lkh_cfg = cfg.get("lkh", {})
+    edge_prior_cfg = cfg.get("edge_prior", {})
+    params = PopmusicParams(
+        max_candidates=int(pop.get("max_candidates", lkh_cfg.get("max_candidates", max_k))),
+        popmusic_sample_size=int(lkh_cfg.get("popmusic_sample_size", 14)),
+        popmusic_solutions=int(lkh_cfg.get("popmusic_solutions", 20)),
+        popmusic_max_neighbors=int(lkh_cfg.get("popmusic_max_neighbors", 5)),
+        popmusic_trials=int(lkh_cfg.get("popmusic_trials", 1)),
+        popmusic_initial_tour=bool(lkh_cfg.get("popmusic_initial_tour", False)),
+    )
+    prior_params = EdgePriorParams(
+        runs=int(pop.get("edge_prior_runs", edge_prior_cfg.get("runs", 30))),
+        time_limit_s=float(pop.get("edge_prior_time_limit_s", edge_prior_cfg.get("time_limit_s", 1.0))),
+        topk=int(pop.get("edge_prior_topk", edge_prior_cfg.get("topk", 5))),
+        move_type=int(edge_prior_cfg.get("move_type", 5)),
+        patching_a=int(edge_prior_cfg.get("patching_a", 2)),
+        patching_c=int(edge_prior_cfg.get("patching_c", 3)),
+        force_rebuild=bool(pop.get("edge_prior_force_rebuild", edge_prior_cfg.get("force_rebuild", False))),
+    )
+    lkh_binary = pop.get("lkh_binary_path") or lkh_cfg.get("lkh_binary", "/content/tools/lkh/LKH")
 
     if use_candidates or use_prior:
-        lkh_cfg = cfg.get("lkh", {})
-        params = PopmusicParams(
-            max_candidates=int(pop.get("max_candidates", lkh_cfg.get("max_candidates", max_k))),
-            popmusic_sample_size=int(lkh_cfg.get("popmusic_sample_size", 14)),
-            popmusic_solutions=int(lkh_cfg.get("popmusic_solutions", 20)),
-            popmusic_max_neighbors=int(lkh_cfg.get("popmusic_max_neighbors", 5)),
-            popmusic_trials=int(lkh_cfg.get("popmusic_trials", 1)),
-            popmusic_initial_tour=bool(lkh_cfg.get("popmusic_initial_tour", False)),
-        )
         cand_path = select_existing_path(candidate_paths_for_instance(spec.name, candidate_root, params))
         if cand_path is None:
             # Historical behavior: if the POPMUSIC cache is absent, build the official
             # LKH CANDIDATE_FILE immediately and store it under the historical cache name.
             cand_path = popmusic_candidate_file_name(spec.name, candidate_root, params)
-            lkh_binary = pop.get("lkh_binary_path") or lkh_cfg.get("lkh_binary", "/content/tools/lkh/LKH")
             print(f"[candidate cache] miss for {spec.name}; generating official LKH/POPMUSIC candidate file.")
             print(f"[candidate cache] tsp_file={tsp_path}")
             print(f"[candidate cache] candidate_file={cand_path}")
@@ -190,7 +221,30 @@ def load_problem_for_spec(cfg: dict, spec: InstanceSpec, artifact_dir: Path) -> 
         except Exception as e:
             raise RuntimeError(f"Could not parse POPMUSIC candidate file for {spec.name}: {cand_path}") from e
 
-        raw_prior = prior_from_candidate_frequency([candidate_map], n=n)
+    if use_prior:
+        edge_prior_root = Path(suite.get("edge_prior_cache_dir", pop.get("edge_prior_cache_dir", "/content/drive/MyDrive/TM/LKH_edge_prior_cache")))
+        prior_path = popmusic_edge_prior_file_name(spec.name, edge_prior_root, prior_params)
+        if prior_params.force_rebuild or (not prior_path.exists()):
+            print(f"[edge prior cache] miss for {spec.name}; generating LKH/POPMUSIC tour-frequency prior.")
+            print(
+                f"[edge prior cache] runs={prior_params.runs} time_limit={prior_params.time_limit_s}s "
+                f"topk={prior_params.topk} output={prior_path}"
+            )
+            prior_path = run_popmusic_edge_prior_generation(
+                tsp_path,
+                prior_path,
+                lkh_binary,
+                n=n,
+                base_seed=int(runtime.get("global_seed", 0)),
+                popmusic=params,
+                prior_params=prior_params,
+                timeout_s=float(edge_prior_cfg.get("generation_timeout_s", max(1800.0, prior_params.runs * 60.0))),
+            )
+            print(f"[edge prior cache] wrote {prior_path}")
+        else:
+            print(f"[edge prior cache] hit for {spec.name}: {prior_path}")
+        raw_prior, edge_prior_meta = load_prior_npz(prior_path)
+        edge_prior_source = str(prior_path)
 
     prior_map = None
     if use_prior:
@@ -199,6 +253,7 @@ def load_problem_for_spec(cfg: dict, spec: InstanceSpec, artifact_dir: Path) -> 
             mode=str(pop.get("prior_mode", "frequency")),
             n=n,
             seed=int(runtime.get("global_seed", 0)),
+            topk=int(prior_params.topk),
         )
 
     problem = SparseTSPProblem(
@@ -216,12 +271,16 @@ def load_problem_for_spec(cfg: dict, spec: InstanceSpec, artifact_dir: Path) -> 
         "candidate_source": candidate_source,
         "use_candidates": use_candidates,
         "use_prior": use_prior,
+        "edge_prior_source": edge_prior_source,
+        "edge_prior_success_runs": edge_prior_meta.get("success_runs"),
+        "edge_prior_attempted_runs": edge_prior_meta.get("attempted_runs"),
+        "edge_prior_topk": edge_prior_meta.get("topk"),
         "candidate_edge_policy": "guidance_only_full_tour_allowed",
     }
     pd.DataFrame([row]).to_csv(artifact_dir / f"problem_{spec.name}_load_info.csv", index=False)
     print(
         f"[load] {spec.name}: n={n}, type={row['edge_weight_type']}, "
-        f"candidates={candidate_source}, prior={'on' if prior_map else 'off'}"
+        f"candidates={candidate_source}, prior={edge_prior_source if prior_map else 'off'}"
     )
     return spec.name, problem, spec.optimum
 
@@ -352,12 +411,14 @@ def main() -> None:
     print(f"use_popmusic_edge_prior: {rc.use_popmusic_edge_prior}")
     print(f"popmusic_prior_mode: {rc.popmusic_prior_mode}")
     print(f"max_candidates: {rc.max_candidates}")
+    print(f"edge_prior_cache_dir: {rc.edge_prior_cache_dir}")
+    print(f"edge_prior_runs: {rc.edge_prior_runs} | time_limit_s: {rc.edge_prior_time_limit_s} | topk: {rc.edge_prior_topk}")
     print("candidate_edge_policy: guidance_only_full_tour_allowed")
-    print("edge_cost: true full TSPLIB distance")
+    print("problem interface: sparse candidates + edge-cost oracle; no public dense distance matrix")
 
     selected_df = write_selected_instances(cfg, artifact_dir, rc.eval_split)
     print("\nSelected TSP instances:")
-    print(selected_df[["instance", "split", "optimum", "tsplib_file_found", "candidate_file_found"]])
+    print(selected_df[["instance", "split", "optimum", "tsplib_file_found", "candidate_file_found", "edge_prior_file_found"]])
 
     if rc.use_popmusic_candidates:
         missing_candidates = selected_df[selected_df["candidate_file_found"].astype(str) == ""]

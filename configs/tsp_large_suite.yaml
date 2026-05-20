@@ -1,6 +1,7 @@
 suite_name: tsp_1kplus_tsplib
 instance_root: /content/drive/MyDrive/TM/TSP_instances
 candidate_cache_dir: /content/drive/MyDrive/TM/LKH_candidate_cache
+edge_prior_cache_dir: /content/drive/MyDrive/TM/LKH_edge_prior_cache
 artifact_root: /content/drive/MyDrive/TM/llm-tsp-runs
 
 splits:
