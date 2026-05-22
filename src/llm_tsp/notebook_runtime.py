@@ -211,11 +211,13 @@ def print_effective_config(effective: dict[str, Any]) -> None:
     print(f"edge_prior_cache_dir: {suite.get('edge_prior_cache_dir')}")
     print(f"edge_prior_runs: {pop.get('edge_prior_runs')} | time_limit_s: {pop.get('edge_prior_time_limit_s')} | topk: {pop.get('edge_prior_topk')}")
     print("candidate_edge_policy: guidance_only_full_tour_allowed")
-    if rc.use_popmusic_candidates and rc.use_popmusic_edge_prior:
+    use_popmusic_candidates = bool(pop.get("use_popmusic_candidates", False))
+    use_popmusic_edge_prior = bool(pop.get("use_popmusic_edge_prior", False))
+    if use_popmusic_candidates and use_popmusic_edge_prior:
         print("problem interface: sparse candidates + edge prior + edge-cost oracle; no public dense distance matrix")
-    elif rc.use_popmusic_candidates:
+    elif use_popmusic_candidates:
         print("problem interface: sparse candidates + edge-cost oracle; no public dense distance matrix")
-    elif rc.use_popmusic_edge_prior:
+    elif use_popmusic_edge_prior:
         print("problem interface: edge prior + edge-cost oracle; no public dense distance matrix; no candidate-neighbor interface")
     else:
         print("problem interface: edge-cost oracle + coords; no candidate-neighbor interface, no edge-prior interface, no public dense distance matrix")
