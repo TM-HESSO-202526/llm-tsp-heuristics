@@ -230,15 +230,18 @@ def build_tsp_prompt(
     if parent_summary is None:
         parent_summary = {}
 
+    historical_memory = historical_memory or ""
+
     if prompt_mode == "initial" or not parent_summary:
         return f"""
 {base}
+
+{historical_memory}
 
 Generate the first heuristic for this active objective now.
 """.strip()
 
     parent_json = json.dumps(parent_summary, indent=2, ensure_ascii=False)
-    historical_memory = historical_memory or ""
 
     if prompt_mode == "redesign_invalid_parent":
         instruction = _redesign_instruction(parent_timed_out=parent_timed_out)
