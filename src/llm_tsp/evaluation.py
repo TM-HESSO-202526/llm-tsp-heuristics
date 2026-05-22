@@ -132,8 +132,12 @@ def evaluate_code_on_problem(
             tour = fn(problem, rng=rng)
             validate_tour(tour, problem.n)
             candidate_edge_count, total_edges = problem.tour_candidate_edge_count(tour)
-            uses_only_candidates = bool(total_edges and candidate_edge_count == total_edges)
-            candidate_edge_share = (float(candidate_edge_count) / float(total_edges)) if total_edges else None
+            if candidate_edge_count is None or total_edges is None:
+                uses_only_candidates = None
+                candidate_edge_share = None
+            else:
+                uses_only_candidates = bool(total_edges and candidate_edge_count == total_edges)
+                candidate_edge_share = (float(candidate_edge_count) / float(total_edges)) if total_edges else None
             cost = tour_cost_from_matrix(tour, problem.distance_matrix_for_evaluator())
             gap = None
             if optimum and optimum > 0:

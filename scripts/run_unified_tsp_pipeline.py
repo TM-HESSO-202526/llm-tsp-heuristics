@@ -418,13 +418,21 @@ def main() -> None:
     print(f"evaluation_timeout_s: {rc.evaluation_timeout_s}")
     print(f"use_popmusic_candidates: {rc.use_popmusic_candidates}")
     print(f"use_popmusic_edge_prior: {rc.use_popmusic_edge_prior}")
-    print(f"effective_candidate_lists_exposed: {bool(rc.use_popmusic_candidates or rc.use_popmusic_edge_prior)}")
+    print(f"effective_candidate_lists_exposed: {bool(rc.use_popmusic_candidates)}")
+    print(f"effective_edge_prior_exposed: {bool(rc.use_popmusic_edge_prior)}")
     print(f"popmusic_prior_mode: {rc.popmusic_prior_mode}")
     print(f"max_candidates: {rc.max_candidates}")
     print(f"edge_prior_cache_dir: {rc.edge_prior_cache_dir}")
     print(f"edge_prior_runs: {rc.edge_prior_runs} | time_limit_s: {rc.edge_prior_time_limit_s} | topk: {rc.edge_prior_topk}")
     print("candidate_edge_policy: guidance_only_full_tour_allowed")
-    print("problem interface: sparse candidates + edge-cost oracle; no public dense distance matrix")
+    if rc.use_popmusic_candidates and rc.use_popmusic_edge_prior:
+        print("problem interface: sparse candidates + edge prior + edge-cost oracle; no public dense distance matrix")
+    elif rc.use_popmusic_candidates:
+        print("problem interface: sparse candidates + edge-cost oracle; no public dense distance matrix")
+    elif rc.use_popmusic_edge_prior:
+        print("problem interface: edge prior + edge-cost oracle; no public dense distance matrix; no candidate-neighbor interface")
+    else:
+        print("problem interface: edge-cost oracle + coords; no candidate-neighbor interface, no edge-prior interface, no public dense distance matrix")
 
     selected_df = write_selected_instances(cfg, artifact_dir, rc.eval_split)
     print("\nSelected TSP instances:")

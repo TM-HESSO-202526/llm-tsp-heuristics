@@ -211,7 +211,14 @@ def print_effective_config(effective: dict[str, Any]) -> None:
     print(f"edge_prior_cache_dir: {suite.get('edge_prior_cache_dir')}")
     print(f"edge_prior_runs: {pop.get('edge_prior_runs')} | time_limit_s: {pop.get('edge_prior_time_limit_s')} | topk: {pop.get('edge_prior_topk')}")
     print("candidate_edge_policy: guidance_only_full_tour_allowed")
-    print("problem interface: sparse candidates + edge-cost oracle; no public dense distance matrix")
+    if rc.use_popmusic_candidates and rc.use_popmusic_edge_prior:
+        print("problem interface: sparse candidates + edge prior + edge-cost oracle; no public dense distance matrix")
+    elif rc.use_popmusic_candidates:
+        print("problem interface: sparse candidates + edge-cost oracle; no public dense distance matrix")
+    elif rc.use_popmusic_edge_prior:
+        print("problem interface: edge prior + edge-cost oracle; no public dense distance matrix; no candidate-neighbor interface")
+    else:
+        print("problem interface: edge-cost oracle + coords; no candidate-neighbor interface, no edge-prior interface, no public dense distance matrix")
     print(f"instance_root: {suite.get('instance_root')}")
     print(f"candidate_cache_dir: {suite.get('candidate_cache_dir')}")
     print(f"artifact_root: {suite.get('artifact_root')}")
