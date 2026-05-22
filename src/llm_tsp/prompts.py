@@ -21,6 +21,9 @@ def normalized_selection_strategy(selection_strategy: str) -> str:
 def objective_prompt_block(config: dict[str, Any]) -> str:
     """TSP-specific objective/interface context, analogous to clustering objective_prompt_block."""
     pop = config.get("popmusic", {})
+    use_candidates = bool(pop.get("use_popmusic_candidates"))
+    use_prior = bool(pop.get("use_popmusic_edge_prior"))
+
     lines = [
         "Active objective: Traveling Salesman Problem / permutation tour construction.",
         "Problem:",
@@ -34,13 +37,12 @@ def objective_prompt_block(config: dict[str, Any]) -> str:
         "Problem object seen by your code:",
         "- problem.n: number of cities.",
         "- problem.edge_cost(i, j): true TSPLIB edge-cost query for one edge at a time.",
-        "- problem.neighbors(i): sparse POPMUSIC/LKH candidate-neighbor list for city i when candidate mode is active.",
-        "- problem.prior(i, j): optional POPMUSIC/LKH tour-frequency edge-support signal.",
         "- problem.coords: city coordinates as a numpy array when available.",
-        "The full dense distance matrix is not part of the public interface; use bounded edge_cost queries and candidate lists.",
+        "The full dense distance matrix is not part of the public interface; use bounded edge_cost queries.",
     ]
-    if pop.get("use_popmusic_candidates"):
+    if use_candidates:
         lines += [
+            "- problem.neighbors(i): sparse POPMUSIC/LKH candidate-neighbor list for city i.",
             "",
             "POPMUSIC/LKH candidate mode is active.",
             "Use problem.neighbors(i) as the main sparse neighborhood for local choices.",
@@ -49,8 +51,9 @@ def objective_prompt_block(config: dict[str, Any]) -> str:
             "problem.edge_cost(i, j) is an oracle-style query for individual edge costs; avoid dense all-pairs scans.",
             "The final returned tour is a normal full TSP permutation and is evaluated on the true full TSPLIB distance.",
         ]
-    if pop.get("use_popmusic_edge_prior"):
+    if use_prior:
         lines += [
+            "- problem.prior(i, j): POPMUSIC/LKH tour-frequency edge-support signal.",
             "",
             "POPMUSIC edge-prior mode is active.",
             f"Prior mode: {pop.get('prior_mode', 'frequency')}",
@@ -123,35 +126,64 @@ def historical_family_avoidance_block(config: dict[str, Any]) -> str:
     search = config.get("search", {})
     if not bool(search.get("historical_family_avoidance", False)):
         return ""
-    return """Historical family avoidance is ACTIVE.
+
+    pop = config.get("popmusic", {})
+    use_candidates = bool(pop.get("use_popmusic_candidates"))
+    use_prior = bool(pop.get("use_popmusic_edge_prior"))
+
+    families = [
+        "1. Nearest-neighbor / closest-unvisited constructors\n"
+        "   - Do not build a tour by repeatedly going to the nearest or cheapest next city.\n"
+        "   - Do not disguise this as \"adaptive\", \"hybrid\", \"enhanced\", or \"priority\" nearest-neighbor.",
+        "2. Cheapest-insertion / regret-insertion constructors\n"
+        "   - Do not construct the tour mainly by inserting one unvisited city into the cheapest position.\n"
+        "   - Do not generate another randomized cheapest insertion, regret insertion, farthest insertion, or sampled insertion variant.",
+    ]
+    if use_candidates:
+        families.append(
+            "3. Simple candidate-list greedy constructors\n"
+            "   - Do not merely use problem.neighbors(i) to choose the nearest or highest-prior neighbor.\n"
+            "   - Candidate lists may be used, but the global construction logic must be different from greedy walk or greedy insertion."
+        )
+    if use_prior:
+        families.append(
+            f"{len(families) + 1}. Prior-as-linear-score variants\n"
+            "   - Do not simply score edges as distance - alpha * prior, distance / (1 + prior), or another small weighted mixture.\n"
+            "   - If problem.prior(i, j) is used, it must change the structure of the construction, not just the edge score."
+        )
+    families += [
+        f"{len(families) + 1}. Standard 2-opt / relocate / LK-like cleanup as the main idea\n"
+        "   - Do not produce a base tour and then rely mainly on 2-opt, segment reversal, relocate, swap, or variable-depth exchange.\n"
+        "   - Bounded cleanup is allowed only as a small final repair step, not as the core heuristic.",
+        f"{len(families) + 2}. Random restarts / multi-start wrappers\n"
+        "   - Do not create diversity only by trying many random starts of the same known constructor.\n"
+        "   - Randomness is allowed only if the deterministic mechanism is structurally new.",
+    ]
+
+    interface_rules = [
+        "- Define exactly one class named TSPHeuristic.",
+        "- Return one permutation of 0..problem.n-1.",
+        "- Do not append the start city at the end.",
+        "- Use only numpy/math/basic Python.",
+        "- Do not use external solvers or libraries.",
+        "- Keep the method scalable for n around 1000 to 1800.",
+    ]
+    if use_candidates and use_prior:
+        interface_rules.append("- Use problem.neighbors(i) and problem.prior(i, j), but avoid dense all-pairs scans.")
+    elif use_candidates:
+        interface_rules.append("- Use problem.neighbors(i) when helpful, but avoid dense all-pairs scans.")
+    elif use_prior:
+        interface_rules.append("- Use problem.prior(i, j) when helpful, but avoid dense all-pairs scans.")
+    else:
+        interface_rules.append("- Use bounded problem.edge_cost(i, j) queries and problem.coords when helpful; avoid dense all-pairs scans.")
+
+    return f"""Historical family avoidance is ACTIVE.
 
 This run is not only trying to improve the best TSP gap. It is explicitly testing whether the LLM can be pushed away from over-produced heuristic families and generate structurally different constructive mechanisms.
 
 From previous TSP runs, the following families were heavily over-generated and must NOT be used again as the main mechanism:
 
-1. Nearest-neighbor / closest-unvisited constructors
-   - Do not build a tour by repeatedly going to the nearest or cheapest next city.
-   - Do not disguise this as “adaptive”, “hybrid”, “enhanced”, or “priority” nearest-neighbor.
-
-2. Cheapest-insertion / regret-insertion constructors
-   - Do not construct the tour mainly by inserting one unvisited city into the cheapest position.
-   - Do not generate another randomized cheapest insertion, regret insertion, farthest insertion, or sampled insertion variant.
-
-3. Simple candidate-list greedy constructors
-   - Do not merely use problem.neighbors(i) to choose the nearest or highest-prior neighbor.
-   - Candidate lists may be used, but the global construction logic must be different from greedy walk or greedy insertion.
-
-4. Prior-as-linear-score variants
-   - Do not simply score edges as distance - alpha * prior, distance / (1 + prior), or another small weighted mixture.
-   - If problem.prior(i, j) is used, it must change the structure of the construction, not just the edge score.
-
-5. Standard 2-opt / relocate / LK-like cleanup as the main idea
-   - Do not produce a base tour and then rely mainly on 2-opt, segment reversal, relocate, swap, or variable-depth exchange.
-   - Bounded cleanup is allowed only as a small final repair step, not as the core heuristic.
-
-6. Random restarts / multi-start wrappers
-   - Do not create diversity only by trying many random starts of the same known constructor.
-   - Randomness is allowed only if the deterministic mechanism is structurally new.
+{chr(10).join(families)}
 
 Your next heuristic must choose a genuinely different construction family. Strict novelty requirement:
 - The main construction mechanism must be different from nearest-neighbor, cheapest/regret insertion, and 2-opt-centered improvement.
@@ -160,17 +192,11 @@ Your next heuristic must choose a genuinely different construction family. Stric
 - In the generated code comments, briefly indicate the intended mechanism family.
 
 Still obey all TSP interface rules:
-- Define exactly one class named TSPHeuristic.
-- Return one permutation of 0..problem.n-1.
-- Do not append the start city at the end.
-- Use only numpy/math/basic Python.
-- Do not use external solvers or libraries.
-- Keep the method scalable for n around 1000 to 1800.
-- Use problem.neighbors(i) and problem.prior(i, j) when available, but avoid dense all-pairs scans."""
+{chr(10).join(interface_rules)}"""
 
 
-def _redesign_instruction(parent_timed_out: bool = False) -> str:
-    return (
+def _redesign_instruction(parent_timed_out: bool = False, historical_avoidance_active: bool = False) -> str:
+    base = (
         "Selection mode: invalid/timeout-aware redesign fallback.\n"
         "No fully valid heuristic has been found yet, and the selected parent is not fully valid"
         + (" and appears to have timeout/runtime failures.\n" if parent_timed_out else ".\n")
@@ -180,10 +206,50 @@ def _redesign_instruction(parent_timed_out: bool = False) -> str:
         + "Redesign from scratch if the parent structure is the source of the failure.\n"
         + "The first priority is to become valid on all search instances; then improve the active objective."
     )
+    if historical_avoidance_active:
+        base += (
+            "\nHistorical family avoidance is active, so validity repair must not collapse back to a banned family. "
+            "If the invalid parent uses nearest-neighbor, cheapest/regret insertion, or 2-opt-centered cleanup, treat that code as a failure example rather than as a template."
+        )
+    return base
 
 
-def _selection_instruction(strategy: str, parent_is_valid: bool) -> str:
+def _selection_instruction(strategy: str, parent_is_valid: bool, historical_avoidance_active: bool = False) -> str:
     strategy = normalized_selection_strategy(strategy)
+    if historical_avoidance_active:
+        if strategy == "1+1":
+            if parent_is_valid:
+                return (
+                    "Selection mode: 1+1 elitist improvement with historical family avoidance.\n"
+                    "The selected parent below is the current best-so-far full-valid heuristic under the active objective, "
+                    "but in this run it is mainly a score/validity reference, not a mechanism to preserve. "
+                    "Do not keep the parent structure merely because it is currently best. "
+                    "If the parent belongs to a banned historical family, such as nearest-neighbor, cheapest/regret insertion, "
+                    "simple greedy construction, or 2-opt-centered cleanup, redesign the main construction mechanism instead of mutating it. "
+                    "A lower score is useful, but the primary experimental goal is to test whether a genuinely different family can be generated while staying valid and scalable."
+                )
+            return (
+                "Selection mode: 1+1 with partial-validity fallback and historical family avoidance.\n"
+                "No fully valid heuristic has been found yet. The selected parent below is only a partial/latest candidate and must not anchor the search. "
+                "Your first priority is to return a valid permutation on all search instances, but do so with a main mechanism that respects the historical family-avoidance constraints. "
+                "Do not repair validity by falling back to nearest-neighbor, cheapest/regret insertion, or 2-opt-centered cleanup."
+            )
+        if parent_is_valid:
+            return (
+                "Selection mode: 1,1 sequential mutation chain with historical family avoidance.\n"
+                "The selected parent below is the most recent heuristic in the chain, not necessarily the best-so-far, "
+                "and it is a reference point rather than a structure to preserve. "
+                "Make a genuine family-level change when the current parent belongs to a banned or over-produced mechanism. "
+                "Do not merely rename the parent, tune constants, add restarts, or add a small cleanup step to the same family. "
+                "The goal is to continue the chain with a valid, scalable heuristic from a structurally different construction family."
+            )
+        return (
+            "Selection mode: 1,1 sequential mutation chain with invalid-parent repair and historical family avoidance.\n"
+            "The selected parent below is the most recent heuristic in the chain and it may be invalid or only partially valid. "
+            "Use the feedback to understand the failure, but do not preserve a banned or over-produced family while repairing it. "
+            "Your first priority is validity; your second priority is to keep the main mechanism structurally different from nearest-neighbor, cheapest/regret insertion, and 2-opt-centered cleanup."
+        )
+
     if strategy == "1+1":
         if parent_is_valid:
             return (
@@ -231,6 +297,7 @@ def build_tsp_prompt(
         parent_summary = {}
 
     historical_memory = historical_memory or ""
+    historical_avoidance_active = bool(historical_memory.strip())
 
     if prompt_mode == "initial" or not parent_summary:
         return f"""
@@ -244,7 +311,10 @@ Generate the first heuristic for this active objective now.
     parent_json = json.dumps(parent_summary, indent=2, ensure_ascii=False)
 
     if prompt_mode == "redesign_invalid_parent":
-        instruction = _redesign_instruction(parent_timed_out=parent_timed_out)
+        instruction = _redesign_instruction(
+            parent_timed_out=parent_timed_out,
+            historical_avoidance_active=historical_avoidance_active,
+        )
         code_block = ""
         if parent_code:
             code_block = f"""
@@ -276,7 +346,11 @@ Return the answer in the required # Name / # Code format.
 """.strip()
 
     parent_is_valid = not bool(parent_is_invalid)
-    instruction = _selection_instruction(strategy, parent_is_valid=parent_is_valid)
+    instruction = _selection_instruction(
+        strategy,
+        parent_is_valid=parent_is_valid,
+        historical_avoidance_active=historical_avoidance_active,
+    )
     history = history_text or "No previous attempts."
     code_block = ""
     if parent_code:
