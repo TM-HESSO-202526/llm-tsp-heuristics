@@ -30,7 +30,7 @@ The TSP prompt follows the same high-level methodology as the clustering prompt:
 - selection-strategy wording is not embedded in the base prompt;
 - `1+1`, `1,1`, and invalid-parent redesign wording is injected dynamically only when a parent exists;
 - invalid/partial parent code is shown once, in the same prompt section as clustering, and only hidden when `HIDE_INVALID_PARENT_CODE=True` in invalid-redesign mode;
-- family-memory controls use the clustering variable names and are disabled by default.
+- `HISTORICAL_FAMILY_AVOIDANCE` optionally injects a fixed historical avoidance block into the prompt.
 
 ## TSP-specific objective block
 

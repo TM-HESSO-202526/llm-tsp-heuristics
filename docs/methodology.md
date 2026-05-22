@@ -57,4 +57,4 @@ The cleaned TSP loop keeps the same parent-selection controls as the clustering 
 
 Before any full-valid parent exists, `INVALID_PARENT_REDESIGN` can trigger a redesign prompt using the latest invalid or partially valid candidate as diagnostic material. The exposed controls match the clustering pipeline: `INVALID_PARENT_REDESIGN`, `REDESIGN_ON_ANY_INVALID_BEFORE_FULL_VALID`, `REDESIGN_ON_TIMEOUT_PARENT`, and `HIDE_INVALID_PARENT_CODE`. Parent-code exposure is therefore controlled by `HIDE_INVALID_PARENT_CODE`, rather than by extra TSP-specific feedback switches.
 
-The family-memory controls also use the clustering terminology: `HISTORICAL_FAMILY_AVOIDANCE`, `FAMILY_NOVELTY_MODE`, `FAMILY_MEMORY_LIMIT`, `MIN_FAMILY_ATTEMPTS_BEFORE_AVOID`, `WEAK_FAMILY_SCORE_THRESHOLD`, and `ALLOW_STRONG_FAMILY_EXPLOITATION`. They are implemented but disabled by default, so no family-memory block is injected into the prompt unless explicitly enabled.
+The historical-family control is intentionally simple: only `HISTORICAL_FAMILY_AVOIDANCE` controls whether the fixed historical avoidance block is injected into the prompt.

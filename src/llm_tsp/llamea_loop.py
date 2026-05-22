@@ -16,7 +16,6 @@ from .prompts import (
     build_tsp_prompt,
     normalized_selection_strategy,
     historical_family_avoidance_block,
-    build_family_memory_block,
 )
 from .evaluation import evaluate_code_on_problem, EvaluationResult
 from .sparse_problem import SparseTSPProblem
@@ -527,7 +526,6 @@ def run_llamea_search(
 
         parent_summary = _parent_summary(parent, records, strategy, prompt_mode)
         historical_memory = historical_family_avoidance_block(config)
-        family_memory = build_family_memory_block(records, parent=parent, config=config)
         prompt = build_tsp_prompt(
             config,
             parent_code=parent_code_for_prompt,
@@ -537,7 +535,6 @@ def run_llamea_search(
             parent_summary=parent_summary,
             parent_timed_out=bool(_is_timeout_error(parent.error) if parent else False),
             historical_memory=historical_memory,
-            family_memory=family_memory,
         )
 
         prompt_path = prompt_dir / f"prompt_iter_{attempt:03d}.txt"

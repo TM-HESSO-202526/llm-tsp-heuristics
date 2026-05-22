@@ -475,13 +475,6 @@ def main() -> None:
     print(f"Selection strategy: {rc.selection_strategy}")
     print(f"Historical family avoidance: {rc.historical_family_avoidance}")
     print(
-        "Family novelty mode: "
-        f"{rc.family_novelty_mode} | memory limit: {rc.family_memory_limit} | "
-        f"min attempts before avoid: {rc.min_family_attempts_before_avoid} | "
-        f"weak threshold: {rc.weak_family_score_threshold} | "
-        f"allow strong exploitation: {rc.allow_strong_family_exploitation}"
-    )
-    print(
         "Invalid-parent redesign: "
         f"{rc.invalid_parent_redesign} | any-invalid: {rc.redesign_on_any_invalid_before_full_valid} | "
         f"timeout: {rc.redesign_on_timeout_parent} | expose-invalid-code: {not rc.hide_invalid_parent_code}"

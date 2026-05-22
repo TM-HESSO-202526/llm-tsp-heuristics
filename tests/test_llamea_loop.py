@@ -25,11 +25,6 @@ def _base_config(strategy="1+1"):
             "redesign_on_timeout_parent": True,
             "hide_invalid_parent_code": False,
             "historical_family_avoidance": False,
-            "family_novelty_mode": False,
-            "family_memory_limit": 8,
-            "min_family_attempts_before_avoid": 5,
-            "weak_family_score_threshold": 20.0,
-            "allow_strong_family_exploitation": True,
         },
         "popmusic": {},
     }

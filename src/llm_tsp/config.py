@@ -65,11 +65,6 @@ class RuntimeConfig:
     redesign_on_timeout_parent: bool = True
     hide_invalid_parent_code: bool = False
     historical_family_avoidance: bool = False
-    family_novelty_mode: bool = False
-    family_memory_limit: int = 8
-    min_family_attempts_before_avoid: int = 5
-    weak_family_score_threshold: float = 20.0
-    allow_strong_family_exploitation: bool = True
 
     # POPMUSIC/candidate-prior layer.
     use_popmusic_candidates: bool = False
@@ -120,11 +115,6 @@ def flatten_runtime_config(cfg: dict[str, Any]) -> RuntimeConfig:
         redesign_on_timeout_parent=bool(search.get("redesign_on_timeout_parent", True)),
         hide_invalid_parent_code=bool(search.get("hide_invalid_parent_code", False)),
         historical_family_avoidance=bool(search.get("historical_family_avoidance", False)),
-        family_novelty_mode=bool(search.get("family_novelty_mode", False)),
-        family_memory_limit=int(search.get("family_memory_limit", 8)),
-        min_family_attempts_before_avoid=int(search.get("min_family_attempts_before_avoid", 5)),
-        weak_family_score_threshold=float(search.get("weak_family_score_threshold", 20.0)),
-        allow_strong_family_exploitation=bool(search.get("allow_strong_family_exploitation", True)),
         use_popmusic_candidates=bool(pop.get("use_popmusic_candidates", False)),
         use_popmusic_edge_prior=bool(pop.get("use_popmusic_edge_prior", False)),
         popmusic_prior_mode=str(pop.get("prior_mode", "none")),

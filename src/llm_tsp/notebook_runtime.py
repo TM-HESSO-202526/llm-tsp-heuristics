@@ -36,15 +36,8 @@ DEFAULTS: dict[str, Any] = {
     "REDESIGN_ON_TIMEOUT_PARENT": True,
     "HIDE_INVALID_PARENT_CODE": False,
 
-    # Family memory / novelty controls, same terminology as clustering.
-    # They are implemented but kept off by default, so nothing is injected
-    # into the prompt unless these are explicitly enabled.
+    # Historical family avoidance is off by default.
     "HISTORICAL_FAMILY_AVOIDANCE": False,
-    "FAMILY_NOVELTY_MODE": False,
-    "FAMILY_MEMORY_LIMIT": 8,
-    "MIN_FAMILY_ATTEMPTS_BEFORE_AVOID": 5,
-    "WEAK_FAMILY_SCORE_THRESHOLD": 20.0,
-    "ALLOW_STRONG_FAMILY_EXPLOITATION": True,
 
     # Runtime and evaluation
     "GLOBAL_SEED": 12345,
@@ -132,11 +125,6 @@ def build_runtime_config_from_notebook_globals(globals_dict: dict[str, Any]) -> 
             "redesign_on_timeout_parent": _as_bool(values["REDESIGN_ON_TIMEOUT_PARENT"]),
             "hide_invalid_parent_code": _as_bool(values["HIDE_INVALID_PARENT_CODE"]),
             "historical_family_avoidance": _as_bool(values["HISTORICAL_FAMILY_AVOIDANCE"]),
-            "family_novelty_mode": _as_bool(values["FAMILY_NOVELTY_MODE"]),
-            "family_memory_limit": int(values["FAMILY_MEMORY_LIMIT"]),
-            "min_family_attempts_before_avoid": int(values["MIN_FAMILY_ATTEMPTS_BEFORE_AVOID"]),
-            "weak_family_score_threshold": float(values["WEAK_FAMILY_SCORE_THRESHOLD"]),
-            "allow_strong_family_exploitation": _as_bool(values["ALLOW_STRONG_FAMILY_EXPLOITATION"]),
         },
         "runtime": {
             "global_seed": int(values["GLOBAL_SEED"]),
@@ -209,13 +197,7 @@ def print_effective_config(effective: dict[str, Any]) -> None:
         f"{search.get('invalid_parent_redesign')} | any-invalid: {search.get('redesign_on_any_invalid_before_full_valid')} | "
         f"timeout: {search.get('redesign_on_timeout_parent')} | expose-invalid-code: {not search.get('hide_invalid_parent_code', False)}"
     )
-    print(
-        "Family novelty mode: "
-        f"{search.get('family_novelty_mode')} | memory limit: {search.get('family_memory_limit')} | "
-        f"min attempts before avoid: {search.get('min_family_attempts_before_avoid')} | "
-        f"weak threshold: {search.get('weak_family_score_threshold')} | "
-        f"allow strong exploitation: {search.get('allow_strong_family_exploitation')}"
-    )
+    print(f"historical_family_avoidance: {search.get('historical_family_avoidance')}")
     print(f"smoke_test: {runtime.get('smoke_test')}")
     print(f"dry_run: {runtime.get('dry_run')}")
     print(f"eval_split: {runtime.get('eval_split')}")

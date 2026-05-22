@@ -119,77 +119,54 @@ Return format:
 
 
 def historical_family_avoidance_block(config: dict[str, Any]) -> str:
-    """Static historical family-memory block, off by default like the clustering control."""
+    """Static historical family-avoidance block, off by default."""
     search = config.get("search", {})
     if not bool(search.get("historical_family_avoidance", False)):
         return ""
-    return (
-        "Historical family memory from previous TSP runs:\n"
-        "The following mechanism families were repeatedly observed in older TSP artifacts. "
-        "Use this as prior context, not as a hard ban. Avoid weak or stagnant families as minor variants, "
-        "but preserve/refine historically strong families if the selected parent genuinely belongs to one.\n"
-        "Do not merely add words such as enhanced, adaptive, hybrid, regularized, improved, or V2 "
-        "while keeping the same main mechanism.\n\n"
-        "For TSP: repeated weak families often include nearest-neighbor-only constructors, random restarts "
-        "without a structural rule, and expensive unbounded 2-opt/LK-like loops that time out. "
-        "Historically useful families are not banned: nearest-neighbor/regret/insertion mechanisms with bounded "
-        "improvement or POPMUSIC candidate/prior usage may still be refined if they are genuinely improving.\n\n"
-        "Your next heuristic should make a structural change in the main tour-construction mechanism unless "
-        "the selected parent is already from a strong/improving family. Do not merely rename or decorate a weak family."
-    )
+    return """Historical family avoidance is ACTIVE.
 
+This run is not only trying to improve the best TSP gap. It is explicitly testing whether the LLM can be pushed away from over-produced heuristic families and generate structurally different constructive mechanisms.
 
-def build_family_memory_block(records: list[Any] | None, parent: Any | None, config: dict[str, Any]) -> str:
-    """Dynamic current-run family novelty block using clustering variable names.
+From previous TSP runs, the following families were heavily over-generated and must NOT be used again as the main mechanism:
 
-    This is deliberately prompt-silent when family_novelty_mode is False.
-    """
-    search = config.get("search", {})
-    if not bool(search.get("family_novelty_mode", False)):
-        return ""
-    if not records:
-        return ""
+1. Nearest-neighbor / closest-unvisited constructors
+   - Do not build a tour by repeatedly going to the nearest or cheapest next city.
+   - Do not disguise this as “adaptive”, “hybrid”, “enhanced”, or “priority” nearest-neighbor.
 
-    min_attempts = int(search.get("min_family_attempts_before_avoid", 5))
-    memory_limit = int(search.get("family_memory_limit", 8))
-    weak_threshold = float(search.get("weak_family_score_threshold", 20.0))
-    allow_strong = bool(search.get("allow_strong_family_exploitation", True))
-    parent_family = str(getattr(parent, "family", "") or "") if parent is not None else ""
+2. Cheapest-insertion / regret-insertion constructors
+   - Do not construct the tour mainly by inserting one unvisited city into the cheapest position.
+   - Do not generate another randomized cheapest insertion, regret insertion, farthest insertion, or sampled insertion variant.
 
-    by_family: dict[str, dict[str, Any]] = {}
-    for r in records:
-        fam = str(getattr(r, "family", "") or "other")
-        d = by_family.setdefault(fam, {"attempts": 0, "best_score": None, "valid": 0})
-        d["attempts"] += 1
-        if bool(getattr(r, "full_valid", False)):
-            d["valid"] += 1
-        score = getattr(r, "selection_score", None)
-        if score is not None:
-            try:
-                score_f = float(score)
-                d["best_score"] = score_f if d["best_score"] is None else min(float(d["best_score"]), score_f)
-            except Exception:
-                pass
+3. Simple candidate-list greedy constructors
+   - Do not merely use problem.neighbors(i) to choose the nearest or highest-prior neighbor.
+   - Candidate lists may be used, but the global construction logic must be different from greedy walk or greedy insertion.
 
-    rows = []
-    for fam, d in by_family.items():
-        attempts = int(d["attempts"])
-        best_score = d["best_score"]
-        weak_or_repeated = attempts >= min_attempts and (best_score is None or float(best_score) > weak_threshold)
-        strong_parent = allow_strong and fam == parent_family and best_score is not None and float(best_score) <= weak_threshold
-        if weak_or_repeated and not strong_parent:
-            rows.append((attempts, fam, best_score, int(d["valid"])))
-    if not rows:
-        return ""
-    rows = sorted(rows, reverse=True)[:memory_limit]
-    lines = [
-        "Current-run family novelty memory:",
-        "The following families have appeared repeatedly without strong improvement. Avoid producing another minor variant unless you make a real structural change.",
-    ]
-    for attempts, fam, best_score, valid_count in rows:
-        score_txt = "NA" if best_score is None else f"{float(best_score):.4f}"
-        lines.append(f"- family={fam} | attempts={attempts} | full_valid_attempts={valid_count} | best_selection_score={score_txt}")
-    return "\n".join(lines)
+4. Prior-as-linear-score variants
+   - Do not simply score edges as distance - alpha * prior, distance / (1 + prior), or another small weighted mixture.
+   - If problem.prior(i, j) is used, it must change the structure of the construction, not just the edge score.
+
+5. Standard 2-opt / relocate / LK-like cleanup as the main idea
+   - Do not produce a base tour and then rely mainly on 2-opt, segment reversal, relocate, swap, or variable-depth exchange.
+   - Bounded cleanup is allowed only as a small final repair step, not as the core heuristic.
+
+6. Random restarts / multi-start wrappers
+   - Do not create diversity only by trying many random starts of the same known constructor.
+   - Randomness is allowed only if the deterministic mechanism is structurally new.
+
+Your next heuristic must choose a genuinely different construction family. Strict novelty requirement:
+- The main construction mechanism must be different from nearest-neighbor, cheapest/regret insertion, and 2-opt-centered improvement.
+- Do not merely rename an old method.
+- Do not just add extra constants, thresholds, restarts, or a final local search to an old family.
+- In the generated code comments, briefly indicate the intended mechanism family.
+
+Still obey all TSP interface rules:
+- Define exactly one class named TSPHeuristic.
+- Return one permutation of 0..problem.n-1.
+- Do not append the start city at the end.
+- Use only numpy/math/basic Python.
+- Do not use external solvers or libraries.
+- Keep the method scalable for n around 1000 to 1800.
+- Use problem.neighbors(i) and problem.prior(i, j) when available, but avoid dense all-pairs scans."""
 
 
 def _redesign_instruction(parent_timed_out: bool = False) -> str:
@@ -244,7 +221,6 @@ def build_tsp_prompt(
     parent_summary: dict[str, Any] | None = None,
     parent_timed_out: bool = False,
     historical_memory: str | None = None,
-    family_memory: str | None = None,
 ) -> str:
     """Build the TSP LLaMEA prompt using the same structure as clustering."""
     base = base_task_prompt(config)
@@ -263,7 +239,6 @@ Generate the first heuristic for this active objective now.
 
     parent_json = json.dumps(parent_summary, indent=2, ensure_ascii=False)
     historical_memory = historical_memory or ""
-    family_memory = family_memory or ""
 
     if prompt_mode == "redesign_invalid_parent":
         instruction = _redesign_instruction(parent_timed_out=parent_timed_out)
@@ -282,7 +257,6 @@ Invalid/partial parent full code, shown only for diagnosis:
 
 {historical_memory}
 
-{family_memory}
 
 Current-run invalid/partial parent summary:
 ```json
@@ -318,7 +292,6 @@ Previously generated heuristics for this active objective:
 
 {historical_memory}
 
-{family_memory}
 
 {instruction}
 

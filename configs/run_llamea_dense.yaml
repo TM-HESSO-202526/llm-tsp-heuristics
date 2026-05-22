@@ -21,11 +21,6 @@ search:
   redesign_on_timeout_parent: true
   hide_invalid_parent_code: false
   historical_family_avoidance: false
-  family_novelty_mode: false
-  family_memory_limit: 8
-  min_family_attempts_before_avoid: 5
-  weak_family_score_threshold: 20.0
-  allow_strong_family_exploitation: true
 
 runtime:
   global_seed: 12345

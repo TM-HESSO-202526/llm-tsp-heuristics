@@ -74,11 +74,6 @@ REDESIGN_ON_TIMEOUT_PARENT = True
 HIDE_INVALID_PARENT_CODE = False
 
 HISTORICAL_FAMILY_AVOIDANCE = False
-FAMILY_NOVELTY_MODE = False
-FAMILY_MEMORY_LIMIT = 8
-MIN_FAMILY_ATTEMPTS_BEFORE_AVOID = 5
-WEAK_FAMILY_SCORE_THRESHOLD = 20.0
-ALLOW_STRONG_FAMILY_EXPLOITATION = True
 ```
 
 There is intentionally no separate experiment-mode variable anymore. This repo always runs the TSP LLaMEA loop; dense mode, candidate mode, and POPMUSIC-prior mode are controlled by the POPMUSIC flags.
