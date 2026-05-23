@@ -130,3 +130,56 @@ def test_avoidance_changes_redesign_instruction():
     )
     assert "Historical family avoidance is active, so validity repair must not collapse back to a banned family" in prompt
     assert "treat that code as a failure example rather than as a template" in prompt
+
+
+def test_family_focus_block_is_injected_and_overrides_switch_family_language():
+    from llm_tsp.prompts import family_focus_block
+
+    cfg = _cfg(use_candidates=False, use_prior=False, avoid=True)
+    cfg["search"].update({"family_focus_mode": True, "selection_strategy": "1+1"})
+    spec = {
+        "id": "voronoi_regions",
+        "name": "Voronoi / region decomposition",
+        "objective": "Partition cities into geometric regions and bridge endpoints.",
+        "strict_constraints": ["The region decomposition must actually determine the tour structure."],
+    }
+    focus = family_focus_block(cfg, spec, family_step=1, calls_per_family=20, family_index=0, total_families=1)
+    prompt = build_tsp_prompt(
+        cfg,
+        prompt_mode="initial",
+        historical_memory=historical_family_avoidance_block(cfg),
+        family_focus_memory=focus,
+    )
+    assert "Family-focus mode is ACTIVE" in prompt
+    assert "For the next generated heuristic, you are locked to the following family" in prompt
+    assert "Voronoi / region decomposition" in prompt
+    assert "Your task is to improve this family, not to switch families" in prompt
+
+
+def test_family_focus_selection_instruction_preserves_locked_family():
+    from llm_tsp.prompts import family_focus_block
+
+    cfg = _cfg(use_candidates=False, use_prior=False, avoid=True)
+    cfg["search"].update({"family_focus_mode": True, "selection_strategy": "1+1"})
+    focus = family_focus_block(
+        cfg,
+        {"id": "mst_skeleton", "name": "MST / tree skeleton", "objective": "Build a tree skeleton."},
+        family_step=2,
+        calls_per_family=20,
+        family_index=0,
+        total_families=1,
+    )
+    prompt = build_tsp_prompt(
+        cfg,
+        parent_code="class TSPHeuristic:\n    pass",
+        history_text="local attempt history",
+        prompt_mode="mutate_parent",
+        parent_is_invalid=False,
+        parent_summary={"attempt": 1, "mean_gap_ref_pct": 12.0},
+        historical_memory=historical_family_avoidance_block(cfg),
+        family_focus_memory=focus,
+    )
+    assert "Selection mode: 1+1 family-focused exploitation" in prompt
+    assert "within this same focus family only" in prompt
+    assert "preserving the locked family as the main mechanism" in prompt
+    assert "Make a genuine family-level change" not in prompt

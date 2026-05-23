@@ -136,3 +136,7 @@ The TSP experiments showed that unrestricted LLM generation tends to rediscover 
 ## Unified Colab launcher
 
 The main notebook is `notebooks/00_tsp_colab_launcher.ipynb`. It follows the same launcher philosophy as the clustering repository: one control panel, Drive mounting, repo refresh, editable install, runtime-config generation, file checks, live logs, artifact summaries, and optional artifact zip download.
+
+### Family-focus mode
+
+The Colab launcher now includes an optional `FAMILY_FOCUS_MODE`. This mode is intended for follow-up runs after historical family avoidance reveals several alternative families. Instead of mixing all families in one prompt, the backend runs one local block per family, with its own parent and history, then writes `family_focus_summary.csv` to compare the best candidate from each family. The editable family descriptions live in the launcher variable `FAMILY_FOCUS_PLAN`.

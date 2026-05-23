@@ -46,3 +46,24 @@ def test_candidate_file_candidates_include_historical_suffixes():
     assert Path("/tmp/cand/dsj1000.cand") in paths
     assert Path("/tmp/cand/dsj1000_candidates.txt") in paths
     assert Path("/tmp/cand/dsj1000/dsj1000_popmusic_candidates.txt") in paths
+
+
+def test_family_focus_runtime_config_derives_total_calls():
+    globals_dict = {
+        "RUN_NAME": "pytest_family_focus",
+        "SMOKE_TEST": False,
+        "DRY_RUN": False,
+        "MAX_LLM_CALLS": 40,
+        "FAMILY_FOCUS_MODE": True,
+        "FAMILY_FOCUS_CALLS_PER_FAMILY": 3,
+        "FAMILY_FOCUS_PLAN": [
+            {"id": "a", "name": "A", "objective": "A"},
+            {"id": "b", "name": "B", "objective": "B", "enabled": False},
+            {"id": "c", "name": "C", "objective": "C"},
+        ],
+    }
+    _, eff = notebook_runtime.build_runtime_config_from_notebook_globals(globals_dict)
+    assert eff["search"]["family_focus_mode"] is True
+    assert eff["search"]["family_focus_calls_per_family"] == 3
+    assert [x["id"] for x in eff["search"]["family_focus_plan"]] == ["a", "c"]
+    assert eff["llm"]["max_llm_calls"] == 6

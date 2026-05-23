@@ -73,3 +73,29 @@ def test_invalid_parent_redesign_prompt_can_include_invalid_code():
         assert "return [0]" in prompt2
         assert "class TSPHeuristic" in prompt2
         assert "# Name / # Code" in prompt2
+
+
+def test_family_focus_uses_local_parent_and_history_per_family():
+    cfg = _base_config("1+1")
+    cfg["llm"]["max_llm_calls"] = 999  # overridden by family-focus plan
+    cfg["search"].update({
+        "family_focus_mode": True,
+        "family_focus_calls_per_family": 2,
+        "family_focus_plan": [
+            {"id": "family_a", "name": "Family A", "objective": "Do A."},
+            {"id": "family_b", "name": "Family B", "objective": "Do B."},
+        ],
+    })
+    with tempfile.TemporaryDirectory() as d:
+        df = run_llamea_search(cfg, [("toy", _problem(), 4.0)], lambda _: VALID, d)
+        assert len(df) == 4
+        assert list(df["focus_family_id"]) == ["family_a", "family_a", "family_b", "family_b"]
+        assert df.loc[0, "prompt_mode"] == "initial"
+        assert df.loc[1, "parent_attempt"] == 1
+        assert df.loc[2, "prompt_mode"] == "initial"
+        assert df.loc[3, "parent_attempt"] == 3
+        prompt3 = Path(d, "prompts", "prompt_iter_003.txt").read_text(encoding="utf-8")
+        assert "Family B" in prompt3
+        assert "Family A" not in prompt3
+        assert "Generate the first heuristic" in prompt3
+        assert Path(d, "family_focus_summary.csv").exists()

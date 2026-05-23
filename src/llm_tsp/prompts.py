@@ -195,7 +195,104 @@ Still obey all TSP interface rules:
 {chr(10).join(interface_rules)}"""
 
 
-def _redesign_instruction(parent_timed_out: bool = False, historical_avoidance_active: bool = False) -> str:
+def family_focus_block(
+    config: dict[str, Any],
+    family_spec: dict[str, Any] | None = None,
+    *,
+    family_step: int | None = None,
+    calls_per_family: int | None = None,
+    family_index: int | None = None,
+    total_families: int | None = None,
+) -> str:
+    """Build the optional family-focus block from launcher-provided family text.
+
+    The backend intentionally does not hard-code the family names/objectives.
+    The Colab launcher owns the FAMILY_FOCUS_PLAN so the user can edit, comment,
+    reorder, or disable families quickly without touching source code.
+    """
+    search = config.get("search", {})
+    if not bool(search.get("family_focus_mode", False)) or not family_spec:
+        return ""
+
+    name = str(family_spec.get("name") or family_spec.get("id") or "Unnamed focus family").strip()
+    fid = str(family_spec.get("id") or name).strip()
+    objective = str(
+        family_spec.get("objective")
+        or family_spec.get("family_objective")
+        or family_spec.get("description")
+        or "Improve this focused TSP construction family."
+    ).strip()
+    description = str(family_spec.get("description") or "").strip()
+
+    raw_constraints = family_spec.get("strict_constraints") or family_spec.get("constraints") or []
+    if isinstance(raw_constraints, str):
+        constraints = [line.strip(" -") for line in raw_constraints.splitlines() if line.strip()]
+    else:
+        constraints = [str(x).strip(" -") for x in raw_constraints if str(x).strip()]
+
+    raw_instructions = family_spec.get("instructions") or family_spec.get("family_specific_instructions") or []
+    if isinstance(raw_instructions, str):
+        instructions = [line.strip(" -") for line in raw_instructions.splitlines() if line.strip()]
+    else:
+        instructions = [str(x).strip(" -") for x in raw_instructions if str(x).strip()]
+
+    default_constraints = [
+        "Your task is to improve this family, not to switch families.",
+        "The declared family must be the main construction mechanism, not a cosmetic wrapper.",
+        "Do not compute the family-specific structure and then ignore it.",
+        "Do not fall back to global nearest-neighbor as the main construction.",
+        "Do not use cheapest/regret insertion as the main construction.",
+        "Do not rely on 2-opt, swaps, relocate moves, or segment reversal as the main source of quality.",
+        "Bounded cleanup is allowed only after the family-specific constructive tour has been built.",
+        "The method must scale to n around 1000 to 1800 cities.",
+    ]
+
+    seen: set[str] = set()
+    merged_constraints: list[str] = []
+    for item in [*constraints, *instructions, *default_constraints]:
+        key = item.lower()
+        if key not in seen:
+            merged_constraints.append(item)
+            seen.add(key)
+
+    progress = []
+    if family_index is not None and total_families is not None:
+        progress.append(f"Family block: {int(family_index) + 1}/{int(total_families)}")
+    if family_step is not None and calls_per_family is not None:
+        progress.append(f"Call inside this family block: {int(family_step)}/{int(calls_per_family)}")
+    progress_text = "\n".join(progress)
+
+    description_block = ""
+    if description and description != objective:
+        description_block = f"\nFamily description from launcher:\n{description}\n"
+
+    constraints_text = "\n".join(f"- {c}" for c in merged_constraints)
+    return f"""Family-focus mode is ACTIVE.
+
+For the next generated heuristic, you are locked to the following family:
+
+Family id:
+{fid}
+
+Family name:
+{name}
+
+Family objective:
+{objective}
+{description_block}
+{progress_text}
+
+Strict constraints:
+{constraints_text}
+
+Only use the local parent and local history from this same family block. Ignore successful heuristics from other family blocks as mechanisms to preserve. At the end of the run, the backend will compare the best candidate from each family separately.""".strip()
+
+
+def _redesign_instruction(
+    parent_timed_out: bool = False,
+    historical_avoidance_active: bool = False,
+    family_focus_active: bool = False,
+) -> str:
     base = (
         "Selection mode: invalid/timeout-aware redesign fallback.\n"
         "No fully valid heuristic has been found yet, and the selected parent is not fully valid"
@@ -211,11 +308,51 @@ def _redesign_instruction(parent_timed_out: bool = False, historical_avoidance_a
             "\nHistorical family avoidance is active, so validity repair must not collapse back to a banned family. "
             "If the invalid parent uses nearest-neighbor, cheapest/regret insertion, or 2-opt-centered cleanup, treat that code as a failure example rather than as a template."
         )
+    if family_focus_active:
+        base += (
+            "\nFamily-focus mode is active. Repair validity while staying inside the currently locked family. "
+            "Do not escape the family block just because the parent is invalid, slow, or low quality."
+        )
     return base
 
 
-def _selection_instruction(strategy: str, parent_is_valid: bool, historical_avoidance_active: bool = False) -> str:
+def _selection_instruction(
+    strategy: str,
+    parent_is_valid: bool,
+    historical_avoidance_active: bool = False,
+    family_focus_active: bool = False,
+) -> str:
     strategy = normalized_selection_strategy(strategy)
+    if family_focus_active:
+        if strategy == "1+1":
+            if parent_is_valid:
+                return (
+                    "Selection mode: 1+1 family-focused exploitation.\n"
+                    "The selected parent below is the current best-so-far full-valid heuristic within this same focus family only. "
+                    "Use it as a local score/validity reference for this family block. Improve or redesign it while preserving the locked family as the main mechanism. "
+                    "Do not switch to nearest-neighbor, cheapest/regret insertion, simple greedy construction, or 2-opt-centered cleanup as the core idea. "
+                    "A lower score is useful, but this block is primarily testing whether this specific family can be made valid, scalable, and competitive."
+                )
+            return (
+                "Selection mode: 1+1 family-focused partial-validity fallback.\n"
+                "No fully valid heuristic has been found yet inside this focus family. The selected parent below is only a partial/latest candidate from this same family block. "
+                "Your first priority is to return a valid permutation on all search instances while staying inside the locked family. "
+                "Do not repair validity by switching to nearest-neighbor, cheapest/regret insertion, or 2-opt-centered cleanup."
+            )
+        if parent_is_valid:
+            return (
+                "Selection mode: 1,1 family-focused sequential chain.\n"
+                "The selected parent below is the most recent heuristic inside this same focus family block. "
+                "Continue the chain by improving the locked family, not by changing family. "
+                "Do not merely rename the parent, tune constants, add restarts, or add a cleanup step while abandoning the declared mechanism."
+            )
+        return (
+            "Selection mode: 1,1 family-focused invalid-parent repair.\n"
+            "The selected parent below is the most recent heuristic inside this same focus family block and it may be invalid or only partially valid. "
+            "Use the feedback to repair validity while preserving the locked family as the main mechanism. "
+            "Do not escape to nearest-neighbor, cheapest/regret insertion, or 2-opt-centered cleanup."
+        )
+
     if historical_avoidance_active:
         if strategy == "1+1":
             if parent_is_valid:
@@ -287,6 +424,7 @@ def build_tsp_prompt(
     parent_summary: dict[str, Any] | None = None,
     parent_timed_out: bool = False,
     historical_memory: str | None = None,
+    family_focus_memory: str | None = None,
 ) -> str:
     """Build the TSP LLaMEA prompt using the same structure as clustering."""
     base = base_task_prompt(config)
@@ -297,13 +435,17 @@ def build_tsp_prompt(
         parent_summary = {}
 
     historical_memory = historical_memory or ""
+    family_focus_memory = family_focus_memory or ""
     historical_avoidance_active = bool(historical_memory.strip())
+    family_focus_active = bool(family_focus_memory.strip())
 
     if prompt_mode == "initial" or not parent_summary:
         return f"""
 {base}
 
 {historical_memory}
+
+{family_focus_memory}
 
 Generate the first heuristic for this active objective now.
 """.strip()
@@ -314,6 +456,7 @@ Generate the first heuristic for this active objective now.
         instruction = _redesign_instruction(
             parent_timed_out=parent_timed_out,
             historical_avoidance_active=historical_avoidance_active,
+            family_focus_active=family_focus_active,
         )
         code_block = ""
         if parent_code:
@@ -330,6 +473,7 @@ Invalid/partial parent full code, shown only for diagnosis:
 
 {historical_memory}
 
+{family_focus_memory}
 
 Current-run invalid/partial parent summary:
 ```json
@@ -350,6 +494,7 @@ Return the answer in the required # Name / # Code format.
         strategy,
         parent_is_valid=parent_is_valid,
         historical_avoidance_active=historical_avoidance_active,
+        family_focus_active=family_focus_active,
     )
     history = history_text or "No previous attempts."
     code_block = ""
@@ -369,6 +514,7 @@ Previously generated heuristics for this active objective:
 
 {historical_memory}
 
+{family_focus_memory}
 
 {instruction}
 

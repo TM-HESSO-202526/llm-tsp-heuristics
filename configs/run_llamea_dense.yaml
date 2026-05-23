@@ -21,6 +21,9 @@ search:
   redesign_on_timeout_parent: true
   hide_invalid_parent_code: false
   historical_family_avoidance: false
+  family_focus_mode: false
+  family_focus_calls_per_family: 20
+  family_focus_plan: []
 
 runtime:
   global_seed: 12345

@@ -16,6 +16,7 @@ from .prompts import (
     build_tsp_prompt,
     normalized_selection_strategy,
     historical_family_avoidance_block,
+    family_focus_block,
 )
 from .evaluation import evaluate_code_on_problem, EvaluationResult
 from .sparse_problem import SparseTSPProblem
@@ -51,6 +52,12 @@ class CandidateRecord:
     partial_valid_cases: int | None = None
     partial_total_cases: int | None = None
     partial_failed_cases: int | None = None
+    family_focus_active: bool = False
+    focus_family_id: str | None = None
+    focus_family_name: str | None = None
+    focus_family_step: int | None = None
+    focus_family_index: int | None = None
+    focus_family_total: int | None = None
 
 
 def stable_hash(text: str, n: int = 16) -> str:
@@ -178,6 +185,91 @@ def parent_selection_reason(records: list[CandidateRecord], strategy: str, paren
     if partial and parent.attempt == min(partial, key=lambda r: (float(r.selection_score), r.attempt)).attempt:
         return "best_partial_penalized_1plus1"
     return "latest_no_valid_or_partial_1plus1"
+
+
+def _family_focus_enabled(search_cfg: dict) -> bool:
+    return bool(search_cfg.get("family_focus_mode", False))
+
+
+def _family_focus_plan(search_cfg: dict) -> list[dict[str, Any]]:
+    plan = search_cfg.get("family_focus_plan") or []
+    if not isinstance(plan, list):
+        raise ValueError("search.family_focus_plan must be a list of family dictionaries.")
+    out: list[dict[str, Any]] = []
+    for i, item in enumerate(plan):
+        if not isinstance(item, dict):
+            raise ValueError(f"search.family_focus_plan[{i}] must be a dict, got {type(item).__name__}.")
+        if not bool(item.get("enabled", True)):
+            continue
+        fid = str(item.get("id") or item.get("name") or f"family_{i+1}").strip()
+        if not fid:
+            fid = f"family_{i+1}"
+        normalized = dict(item)
+        normalized.setdefault("id", fid)
+        normalized.setdefault("name", fid)
+        out.append(normalized)
+    return out
+
+
+def _family_focus_for_attempt(search_cfg: dict, attempt: int) -> tuple[dict[str, Any] | None, int | None, int | None, int | None, int | None]:
+    """Return family spec and block metadata for one global attempt.
+
+    Returns: (family_spec, family_step, calls_per_family, family_index, total_families).
+    """
+    if not _family_focus_enabled(search_cfg):
+        return None, None, None, None, None
+    plan = _family_focus_plan(search_cfg)
+    if not plan:
+        raise ValueError("FAMILY_FOCUS_MODE is active but FAMILY_FOCUS_PLAN is empty or all entries are disabled.")
+    calls_per_family = max(1, int(search_cfg.get("family_focus_calls_per_family", 20)))
+    family_index = min((int(attempt) - 1) // calls_per_family, len(plan) - 1)
+    family_step = (int(attempt) - 1) - family_index * calls_per_family + 1
+    return plan[family_index], family_step, calls_per_family, family_index, len(plan)
+
+
+def _records_for_focus(records: list[CandidateRecord], focus_family_id: str | None) -> list[CandidateRecord]:
+    if not focus_family_id:
+        return records
+    return [r for r in records if r.focus_family_id == focus_family_id]
+
+
+def _write_family_focus_summary(records: list[CandidateRecord], artifact_dir: Path) -> None:
+    if not records or not any(r.family_focus_active for r in records):
+        return
+    df = pd.DataFrame([asdict(r) for r in records])
+    if df.empty or "focus_family_id" not in df:
+        return
+    rows: list[dict[str, Any]] = []
+    for fid, g in df.groupby("focus_family_id", dropna=False):
+        full = g[g["full_valid"].astype(bool) & g["selection_score"].notna()].copy()
+        best = full.sort_values(["selection_score", "attempt"]).iloc[0].to_dict() if len(full) else {}
+        rows.append({
+            "focus_family_id": fid,
+            "focus_family_name": next((x for x in g["focus_family_name"].dropna().astype(str).tolist() if x), fid),
+            "focus_family_index": int(g["focus_family_index"].dropna().iloc[0]) if g["focus_family_index"].notna().any() else None,
+            "attempts": int(len(g)),
+            "full_valid_attempts": int(len(full)),
+            "valid_attempts": int(g["valid"].astype(bool).sum()) if "valid" in g else None,
+            "best_attempt": int(best.get("attempt")) if best else None,
+            "best_selection_score": float(best.get("selection_score")) if best else None,
+            "best_mean_gap_percent": float(best.get("mean_gap_percent")) if best and best.get("mean_gap_percent") is not None else None,
+            "best_mean_runtime_s": float(best.get("mean_runtime_s")) if best and best.get("mean_runtime_s") is not None else None,
+            "best_name": best.get("name") if best else None,
+            "best_inferred_family": best.get("family") if best else None,
+            "best_code_path": best.get("code_path") if best else None,
+        })
+    out = pd.DataFrame(rows).sort_values(["focus_family_index", "focus_family_id"], na_position="last")
+    _write_csv(out, artifact_dir / "family_focus_summary.csv")
+    # Copy the best code per family into a small convenience folder.
+    best_dir = artifact_dir / "best_by_focus_family"
+    best_dir.mkdir(parents=True, exist_ok=True)
+    for _, row in out.iterrows():
+        code_path = row.get("best_code_path")
+        fid = str(row.get("focus_family_id") or "unknown")
+        if code_path and Path(str(code_path)).exists():
+            safe = re.sub(r"[^A-Za-z0-9_.-]+", "_", fid)[:80]
+            shutil.copy2(str(code_path), best_dir / f"{safe}_best.py")
+
 
 def _read_code_from_record(record: CandidateRecord | None) -> str | None:
     if not record or not record.code_path:
@@ -451,6 +543,7 @@ def _write_summary_artifacts(records: list[CandidateRecord], instance_rows: list
         _write_csv(inst_df, artifact_dir / "llm_search_instance_rows.csv")
 
     _write_family_summary(records, artifact_dir)
+    _write_family_focus_summary(records, artifact_dir)
     _write_best_artifacts(records, artifact_dir)
     return df
 
@@ -498,6 +591,20 @@ def run_llamea_search(
     pop_cfg = config.get("popmusic", {})
 
     max_calls = int(llm_cfg.get("max_llm_calls", 1))
+    family_focus_active = _family_focus_enabled(search_cfg)
+    family_focus_plan = _family_focus_plan(search_cfg) if family_focus_active else []
+    calls_per_family = max(1, int(search_cfg.get("family_focus_calls_per_family", 20)))
+    if family_focus_active:
+        if not family_focus_plan:
+            raise ValueError("FAMILY_FOCUS_MODE is active but FAMILY_FOCUS_PLAN is empty or all entries are disabled.")
+        planned_calls = calls_per_family * len(family_focus_plan)
+        if max_calls != planned_calls:
+            print(
+                f"Family-focus mode active: overriding max_llm_calls={max_calls} with "
+                f"{planned_calls} (= {len(family_focus_plan)} families × {calls_per_family} calls).",
+                flush=True,
+            )
+        max_calls = planned_calls
     strategy = normalized_selection_strategy(search_cfg.get("selection_strategy", "1+1"))
     if strategy not in {"1+1", "1,1"}:
         raise ValueError(f"selection_strategy must be '1+1' or '1,1', got {strategy!r}")
@@ -510,12 +617,26 @@ def run_llamea_search(
     seen_hashes: set[str] = set()
 
     for attempt in range(1, max_calls + 1):
-        parent = select_parent(records, strategy)
+        focus_spec, focus_step, focus_calls, focus_index, focus_total = _family_focus_for_attempt(search_cfg, attempt)
+        focus_family_id = str(focus_spec.get("id")) if focus_spec else None
+        focus_family_name = str(focus_spec.get("name") or focus_family_id) if focus_spec else None
+        local_records = _records_for_focus(records, focus_family_id)
+
+        parent = select_parent(local_records, strategy)
         parent_code = _read_code_from_record(parent)
         prompt_mode = "initial" if parent is None else "mutate_parent"
         parent_is_invalid = bool(parent is not None and not parent.full_valid)
-        if _should_use_redesign_prompt(parent, records, search_cfg):
+        if _should_use_redesign_prompt(parent, local_records, search_cfg):
             prompt_mode = "redesign_invalid_parent"
+
+        focus_record_fields = {
+            "family_focus_active": bool(focus_spec),
+            "focus_family_id": focus_family_id,
+            "focus_family_name": focus_family_name,
+            "focus_family_step": focus_step,
+            "focus_family_index": focus_index,
+            "focus_family_total": focus_total,
+        }
 
         # Match clustering: selected parent code is shown in normal mutation prompts.
         # In invalid-redesign mode, hide it only when hide_invalid_parent_code=True.
@@ -524,17 +645,35 @@ def run_llamea_search(
         else:
             parent_code_for_prompt = parent_code
 
-        parent_summary = _parent_summary(parent, records, strategy, prompt_mode)
+        parent_summary = _parent_summary(parent, local_records, strategy, prompt_mode)
+        if focus_spec:
+            parent_summary.update({
+                "family_focus_active": True,
+                "focus_family_id": focus_family_id,
+                "focus_family_name": focus_family_name,
+                "focus_family_step": focus_step,
+                "focus_family_index": focus_index,
+                "focus_family_total": focus_total,
+            })
         historical_memory = historical_family_avoidance_block(config)
+        focus_memory = family_focus_block(
+            config,
+            focus_spec,
+            family_step=focus_step,
+            calls_per_family=focus_calls,
+            family_index=focus_index,
+            total_families=focus_total,
+        )
         prompt = build_tsp_prompt(
             config,
             parent_code=parent_code_for_prompt,
-            history_text=build_history_text(records, history_limit),
+            history_text=build_history_text(local_records, history_limit),
             prompt_mode=prompt_mode,
             parent_is_invalid=parent_is_invalid,
             parent_summary=parent_summary,
             parent_timed_out=bool(_is_timeout_error(parent.error) if parent else False),
             historical_memory=historical_memory,
+            family_focus_memory=focus_memory,
         )
 
         prompt_path = prompt_dir / f"prompt_iter_{attempt:03d}.txt"
@@ -544,6 +683,12 @@ def run_llamea_search(
 
         print("\n" + "=" * 90, flush=True)
         print(f"[LLM call {attempt}/{max_calls}] objective=tsp constraint=permutation_tour", flush=True)
+        if focus_spec:
+            print(
+                f"  family-focus: {focus_family_id} ({focus_family_name}) "
+                f"call {focus_step}/{focus_calls}",
+                flush=True,
+            )
 
         try:
             raw = llm_call([
@@ -575,6 +720,7 @@ def run_llamea_search(
                 raw_response_path=None,
                 prompt_path=str(prompt_path),
                 family_desc=family_description("llm_call_failure"),
+                **focus_record_fields,
                 partial_valid_cases=0,
                 partial_total_cases=len(problems),
                 partial_failed_cases=len(problems),
@@ -624,6 +770,7 @@ def run_llamea_search(
                 raw_response_path=str(raw_path),
                 prompt_path=str(prompt_path),
                 family_desc=fam_desc,
+                **focus_record_fields,
                 partial_valid_cases=0,
                 partial_total_cases=len(problems),
                 partial_failed_cases=len(problems),
@@ -652,6 +799,12 @@ def run_llamea_search(
             "selection_strategy": strategy,
             "prompt_mode": prompt_mode,
             "code_path": str(code_path),
+            "family_focus_active": bool(focus_spec),
+            "focus_family_id": focus_family_id,
+            "focus_family_name": focus_family_name,
+            "focus_family_step": focus_step,
+            "focus_family_index": focus_index,
+            "focus_family_total": focus_total,
         }
 
         for problem_index, (instance_name, problem, optimum) in enumerate(problems):
@@ -700,6 +853,7 @@ def run_llamea_search(
             raw_response_path=str(raw_path),
             prompt_path=str(prompt_path),
             family_desc=fam_desc,
+            **focus_record_fields,
             feedback_by_instance=feedback_by_instance,
             search_cost_mean=mean_cost,
             search_gap_ref_mean_pct=mean_gap,

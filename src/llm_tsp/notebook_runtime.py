@@ -39,6 +39,12 @@ DEFAULTS: dict[str, Any] = {
     # Historical family avoidance is off by default.
     "HISTORICAL_FAMILY_AVOIDANCE": False,
 
+    # Family-focus/island exploitation mode.
+    # The launcher notebook should provide the actual FAMILY_FOCUS_PLAN text.
+    "FAMILY_FOCUS_MODE": False,
+    "FAMILY_FOCUS_CALLS_PER_FAMILY": 20,
+    "FAMILY_FOCUS_PLAN": [],
+
     # Runtime and evaluation
     "GLOBAL_SEED": 12345,
     "CANDIDATE_TIMEOUT_S": 60,
@@ -97,7 +103,17 @@ def build_runtime_config_from_notebook_globals(globals_dict: dict[str, Any]) -> 
     values = {k: globals_dict.get(k, v) for k, v in DEFAULTS.items()}
     smoke_test = _as_bool(values["SMOKE_TEST"])
     dry_run = _as_bool(values["DRY_RUN"])
+    family_focus_mode = _as_bool(values["FAMILY_FOCUS_MODE"])
+    family_focus_calls_per_family = max(1, int(values["FAMILY_FOCUS_CALLS_PER_FAMILY"]))
+    raw_family_focus_plan = values.get("FAMILY_FOCUS_PLAN") or []
+    if not isinstance(raw_family_focus_plan, list):
+        raise ValueError("FAMILY_FOCUS_PLAN must be a list of dictionaries.")
+    family_focus_plan = [dict(item) for item in raw_family_focus_plan if isinstance(item, dict) and _as_bool(item.get("enabled", True))]
+    if family_focus_mode and not family_focus_plan:
+        raise ValueError("FAMILY_FOCUS_MODE=True but FAMILY_FOCUS_PLAN is empty or all entries are disabled.")
     max_calls = 1 if smoke_test else int(values["MAX_LLM_CALLS"])
+    if family_focus_mode and not smoke_test:
+        max_calls = family_focus_calls_per_family * len(family_focus_plan)
 
     strategy = str(values["SELECTION_STRATEGY"])
     if strategy not in {"1+1", "1,1"}:
@@ -125,6 +141,9 @@ def build_runtime_config_from_notebook_globals(globals_dict: dict[str, Any]) -> 
             "redesign_on_timeout_parent": _as_bool(values["REDESIGN_ON_TIMEOUT_PARENT"]),
             "hide_invalid_parent_code": _as_bool(values["HIDE_INVALID_PARENT_CODE"]),
             "historical_family_avoidance": _as_bool(values["HISTORICAL_FAMILY_AVOIDANCE"]),
+            "family_focus_mode": family_focus_mode,
+            "family_focus_calls_per_family": family_focus_calls_per_family,
+            "family_focus_plan": family_focus_plan,
         },
         "runtime": {
             "global_seed": int(values["GLOBAL_SEED"]),
@@ -198,6 +217,13 @@ def print_effective_config(effective: dict[str, Any]) -> None:
         f"timeout: {search.get('redesign_on_timeout_parent')} | expose-invalid-code: {not search.get('hide_invalid_parent_code', False)}"
     )
     print(f"historical_family_avoidance: {search.get('historical_family_avoidance')}")
+    print(f"family_focus_mode: {search.get('family_focus_mode', False)}")
+    if search.get('family_focus_mode', False):
+        plan = search.get('family_focus_plan') or []
+        print(f"family_focus_calls_per_family: {search.get('family_focus_calls_per_family')}")
+        print(f"family_focus_active_families: {len(plan)}")
+        for i, fam in enumerate(plan, start=1):
+            print(f"  [{i}] {fam.get('id')} — {fam.get('name')}")
     print(f"smoke_test: {runtime.get('smoke_test')}")
     print(f"dry_run: {runtime.get('dry_run')}")
     print(f"eval_split: {runtime.get('eval_split')}")

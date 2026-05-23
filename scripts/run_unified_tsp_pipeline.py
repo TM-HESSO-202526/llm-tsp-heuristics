@@ -482,6 +482,14 @@ def main() -> None:
     print("Unified prompt builder ready for objective: tsp")
     print(f"Selection strategy: {rc.selection_strategy}")
     print(f"Historical family avoidance: {rc.historical_family_avoidance}")
+    search_cfg = cfg.get("search", {})
+    print(f"Family focus mode: {bool(search_cfg.get('family_focus_mode', False))}")
+    if search_cfg.get("family_focus_mode", False):
+        plan = [f for f in (search_cfg.get("family_focus_plan") or []) if f.get("enabled", True)]
+        print(f"Family focus calls per family: {search_cfg.get('family_focus_calls_per_family', 20)}")
+        print(f"Family focus active families: {len(plan)}")
+        for i, fam in enumerate(plan, start=1):
+            print(f"  [{i}] {fam.get('id')} — {fam.get('name')}")
     print(
         "Invalid-parent redesign: "
         f"{rc.invalid_parent_redesign} | any-invalid: {rc.redesign_on_any_invalid_before_full_valid} | "
