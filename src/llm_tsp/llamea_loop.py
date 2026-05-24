@@ -58,6 +58,9 @@ class CandidateRecord:
     focus_family_step: int | None = None
     focus_family_index: int | None = None
     focus_family_total: int | None = None
+    family_focus_compliant: bool | None = None
+    family_focus_compliance_level: str | None = None
+    family_focus_mismatch_reason: str | None = None
 
 
 def stable_hash(text: str, n: int = 16) -> str:
@@ -137,9 +140,16 @@ def _record_line(record: CandidateRecord) -> str:
     score = record.selection_score
     family = str(record.family or "").strip()
     family_part = f" | family={family}" if family else ""
+    focus_part = ""
+    if record.family_focus_active:
+        comp = record.family_focus_compliance_level or "unknown"
+        reason = str(record.family_focus_mismatch_reason or "").replace("\n", " ")[:180]
+        focus_part = f" | focus_family={record.focus_family_id} | focus_compliance={comp}"
+        if reason:
+            focus_part += f" | focus_feedback={reason}"
     err = str(record.error or "")[:200].replace("\n", " ")
     return (
-        f"iter={record.iteration} | {record.name} | {status}{family_part} | "
+        f"iter={record.iteration} | {record.name} | {status}{family_part}{focus_part} | "
         f"search_gap={gap} | selection_score={score} | error={err}"
     )
 
@@ -233,6 +243,136 @@ def _records_for_focus(records: list[CandidateRecord], focus_family_id: str | No
     return [r for r in records if r.focus_family_id == focus_family_id]
 
 
+
+def _contains_any(text: str, needles: list[str]) -> bool:
+    return any(n in text for n in needles)
+
+
+def infer_family_focus_compliance(
+    focus_spec: dict[str, Any] | None,
+    inferred_family: str,
+    algo_name: str,
+    code: str,
+) -> tuple[bool | None, str, str]:
+    """Heuristic, transparent compliance diagnostic for family-focus mode.
+
+    This is intentionally a logging/feedback signal, not a hard rejection gate.
+    The generic inferred family can say ``nearest_neighbor_2opt`` even when a real
+    grid/Voronoi scaffold exists and uses nearest-neighbor only as a local
+    subroutine. Therefore we record three levels:
+    - compliant: the locked-family structure appears to be the main mechanism.
+    - partial: the locked-family structure appears, but the code also leans on
+      nearest-neighbor/insertion/2-opt style components.
+    - non_compliant: the code mostly escaped to a banned generic family or did
+      not implement the locked-family structure.
+    """
+    if not focus_spec:
+        return None, "not_applicable", ""
+
+    fid = str(focus_spec.get("id") or "").strip().lower()
+    name = str(focus_spec.get("name") or fid)
+    text = f"{algo_name or ''}\n{code or ''}".lower().replace("-", "_")
+    family = str(inferred_family or "other")
+    fallback_family = family in {
+        "nearest_neighbor",
+        "nearest_neighbor_2opt",
+        "candidate_2opt",
+        "candidate_constructive",
+        "candidate_prior_2opt",
+        "candidate_prior_constructive",
+        "two_opt_improvement",
+        "regret_insertion",
+    }
+    nn_like = _contains_any(text, ["nearest", "closest", "closest_unvisited", "min_distance"])
+    opt_like = _contains_any(text, ["2_opt", "two_opt", "segment", "reverse", "reversal"])
+
+    def result(level: str, reason: str) -> tuple[bool, str, str]:
+        return level == "compliant", level, reason
+
+    if fid == "mst_skeleton":
+        has_skeleton = _contains_any(text, ["mst", "spanning", "tree", "forest", "parent", "adjacency", "preorder", "dfs", "shortcut"])
+        has_real_tree = _contains_any(text, ["adjacency", "parent", "preorder", "dfs", "stack", "forest", "tree_edges", "mst_edges"])
+        if fallback_family and nn_like and not has_real_tree:
+            return result("non_compliant", "Nearest-neighbor-like code generated inside MST skeleton block; no clear tree/forest skeleton is used as the main object.")
+        if has_skeleton and has_real_tree and not fallback_family:
+            return result("compliant", "Tree/forest skeleton terms and traversal/adjacency logic appear central to the code.")
+        if has_skeleton:
+            return result("partial", "MST/tree vocabulary appears, but the implementation also looks nearest-neighbor or cleanup dominated.")
+        return result("non_compliant", "No clear MST/tree/forest skeleton mechanism detected.")
+
+    if fid == "voronoi_regions":
+        has_regions = _contains_any(text, ["voronoi", "region", "regions", "seed", "seeds", "partition", "cell", "centroid"])
+        has_bridge = _contains_any(text, ["bridge", "endpoint", "connect", "merge", "region_order", "order_regions"])
+        if has_regions and has_bridge and not fallback_family:
+            return result("compliant", "Voronoi/region decomposition and region-bridging logic appear central.")
+        if has_regions:
+            return result("partial", "Region/Voronoi structure appears, but the code also leans on nearest-neighbor, insertion, or 2-opt-style logic.")
+        return result("non_compliant", "No clear Voronoi/region decomposition detected; likely escaped the locked family.")
+
+    if fid == "convex_hull_outside_in":
+        has_hull = _contains_any(text, ["convex", "hull", "graham", "monotonic", "boundary", "outer"])
+        has_insert = _contains_any(text, ["insert", "insertion", "delta", "edge impact", "distance_to_edge", "tour edge"])
+        if has_hull and has_insert:
+            return result("compliant", "Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family.")
+        if has_hull:
+            return result("partial", "Convex hull/boundary structure appears, but outside-in insertion is weak or unclear.")
+        return result("non_compliant", "No clear convex-hull/outside-in construction detected.")
+
+    if fid == "grid_sector_decomposition":
+        has_grid = _contains_any(text, ["grid", "cell", "cells", "sector", "sectors", "snake", "radial", "sweep"])
+        has_macro_order = _contains_any(text, ["snake", "radial", "sector", "order_cells", "cell_order", "sort"])
+        if has_grid and has_macro_order and not fallback_family:
+            return result("compliant", "Grid/sector macro-order appears central to the construction.")
+        if has_grid:
+            return result("partial", "Grid/sector structure appears, but nearest-neighbor, insertion, or 2-opt-style logic still seems important.")
+        return result("non_compliant", "No clear grid/sector decomposition detected.")
+
+    if fid == "sparse_geometric_graph":
+        has_graph = _contains_any(text, ["graph", "adjacency", "gabriel", "delaunay", "edge list", "fragment", "component", "bounded_degree"])
+        if has_graph and not fallback_family:
+            return result("compliant", "Sparse geometric graph / fragment structure appears central.")
+        if has_graph:
+            return result("partial", "Sparse graph vocabulary appears, but the code may still be nearest-neighbor or repair dominated.")
+        return result("non_compliant", "No clear sparse geometric graph mechanism detected.")
+
+    if fid == "clustering_decomposition":
+        has_cluster = _contains_any(text, ["cluster", "clusters", "centroid", "center", "assignment", "subproblem"])
+        has_bridge = _contains_any(text, ["bridge", "endpoint", "connect", "merge", "cluster_order", "order_clusters"])
+        if has_cluster and has_bridge and not fallback_family:
+            return result("compliant", "Cluster decomposition and bridge logic appear central.")
+        if has_cluster:
+            return result("partial", "Cluster decomposition appears, but local nearest-neighbor/cleanup may dominate.")
+        return result("non_compliant", "No clear cluster-decomposition mechanism detected.")
+
+    if fid == "spectral_clustering_proxy":
+        has_partition = _contains_any(text, ["spectral", "projection", "project", "bisect", "bisection", "cut", "partition", "split"])
+        if has_partition and not fallback_family:
+            return result("compliant", "Spectral/graph-cut proxy partitioning appears central.")
+        if has_partition:
+            return result("partial", "Spectral/proxy partitioning appears, but local nearest-neighbor/cleanup may dominate.")
+        return result("non_compliant", "No clear spectral/proxy partitioning mechanism detected.")
+
+    if fid == "polar_angle_sweep":
+        has_sweep = _contains_any(text, ["angle", "polar", "atan2", "radius", "radial", "sweep", "sector"])
+        if has_sweep and not fallback_family:
+            return result("compliant", "Polar/radial sweep ordering appears central.")
+        if has_sweep:
+            return result("partial", "Sweep terms appear, but the code may still select nearest/closest cities or rely on cleanup.")
+        return result("non_compliant", "No clear polar-angle/sweep mechanism detected.")
+
+    if fid == "region_growth_endpoint_bridging":
+        has_endpoint = _contains_any(text, ["endpoint", "fragment", "path", "bridge", "merge", "degree", "subtour", "region"])
+        if has_endpoint and not fallback_family:
+            return result("compliant", "Endpoint/fragment bridging appears central.")
+        if has_endpoint:
+            return result("partial", "Endpoint/fragment terminology appears, but it may reduce to a closest-endpoint/nearest-neighbor walk.")
+        return result("non_compliant", "No clear endpoint-bridging or fragment-growth mechanism detected.")
+
+    # Unknown user-added focus family: provide conservative diagnostics.
+    if fallback_family:
+        return result("partial", f"Generated code was classified as {family}; inspect manually for family fidelity to {name}.")
+    return result("compliant", f"No obvious banned generic family detected for focus family {name}.")
+
 def _write_family_focus_summary(records: list[CandidateRecord], artifact_dir: Path) -> None:
     if not records or not any(r.family_focus_active for r in records):
         return
@@ -243,6 +383,11 @@ def _write_family_focus_summary(records: list[CandidateRecord], artifact_dir: Pa
     for fid, g in df.groupby("focus_family_id", dropna=False):
         full = g[g["full_valid"].astype(bool) & g["selection_score"].notna()].copy()
         best = full.sort_values(["selection_score", "attempt"]).iloc[0].to_dict() if len(full) else {}
+        compliant_full = full[full.get("family_focus_compliance_level", "") == "compliant"] if "family_focus_compliance_level" in full else pd.DataFrame()
+        partial_full = full[full.get("family_focus_compliance_level", "") == "partial"] if "family_focus_compliance_level" in full else pd.DataFrame()
+        best_compliant = compliant_full.sort_values(["selection_score", "attempt"]).iloc[0].to_dict() if len(compliant_full) else {}
+        best_partial = partial_full.sort_values(["selection_score", "attempt"]).iloc[0].to_dict() if len(partial_full) else {}
+        compliance_counts = g["family_focus_compliance_level"].fillna("unknown").value_counts().to_dict() if "family_focus_compliance_level" in g else {}
         rows.append({
             "focus_family_id": fid,
             "focus_family_name": next((x for x in g["focus_family_name"].dropna().astype(str).tolist() if x), fid),
@@ -250,12 +395,22 @@ def _write_family_focus_summary(records: list[CandidateRecord], artifact_dir: Pa
             "attempts": int(len(g)),
             "full_valid_attempts": int(len(full)),
             "valid_attempts": int(g["valid"].astype(bool).sum()) if "valid" in g else None,
+            "compliant_attempts": int(compliance_counts.get("compliant", 0)),
+            "partial_compliance_attempts": int(compliance_counts.get("partial", 0)),
+            "non_compliant_attempts": int(compliance_counts.get("non_compliant", 0)),
             "best_attempt": int(best.get("attempt")) if best else None,
             "best_selection_score": float(best.get("selection_score")) if best else None,
             "best_mean_gap_percent": float(best.get("mean_gap_percent")) if best and best.get("mean_gap_percent") is not None else None,
             "best_mean_runtime_s": float(best.get("mean_runtime_s")) if best and best.get("mean_runtime_s") is not None else None,
             "best_name": best.get("name") if best else None,
             "best_inferred_family": best.get("family") if best else None,
+            "best_family_focus_compliance_level": best.get("family_focus_compliance_level") if best else None,
+            "best_family_focus_compliant": best.get("family_focus_compliant") if best else None,
+            "best_family_focus_mismatch_reason": best.get("family_focus_mismatch_reason") if best else None,
+            "best_compliant_attempt": int(best_compliant.get("attempt")) if best_compliant else None,
+            "best_compliant_mean_gap_percent": float(best_compliant.get("mean_gap_percent")) if best_compliant and best_compliant.get("mean_gap_percent") is not None else None,
+            "best_partial_attempt": int(best_partial.get("attempt")) if best_partial else None,
+            "best_partial_mean_gap_percent": float(best_partial.get("mean_gap_percent")) if best_partial and best_partial.get("mean_gap_percent") is not None else None,
             "best_code_path": best.get("code_path") if best else None,
         })
     out = pd.DataFrame(rows).sort_values(["focus_family_index", "focus_family_id"], na_position="last")
@@ -385,6 +540,12 @@ def _parent_summary(parent: CandidateRecord | None, records: list[CandidateRecor
         "name": parent.name,
         "family_sig": parent.family,
         "family_desc": parent.family_desc or family_description(parent.family),
+        "family_focus_active": bool(parent.family_focus_active),
+        "focus_family_id": parent.focus_family_id,
+        "focus_family_name": parent.focus_family_name,
+        "family_focus_compliant": parent.family_focus_compliant,
+        "family_focus_compliance_level": parent.family_focus_compliance_level,
+        "family_focus_mismatch_reason": parent.family_focus_mismatch_reason or "",
         "valid": bool(parent.full_valid),
         "full_valid": bool(parent.full_valid),
         "selection_score": parent.selection_score,
@@ -741,6 +902,12 @@ def run_llamea_search(
         name = infer_candidate_name(raw, code, attempt)
         family = infer_family(name, code)
         fam_desc = family_description(family)
+        family_focus_compliant, family_focus_compliance_level, family_focus_mismatch_reason = infer_family_focus_compliance(
+            focus_spec,
+            family,
+            name,
+            code,
+        )
         code_path = code_dir / f"iter_{attempt:03d}_{h}.py"
         code_path.write_text(code, encoding="utf-8")
         legacy_code_path = legacy_code_dir / f"attempt_{attempt:04d}_{h}.py"
@@ -770,6 +937,9 @@ def run_llamea_search(
                 raw_response_path=str(raw_path),
                 prompt_path=str(prompt_path),
                 family_desc=fam_desc,
+                family_focus_compliant=family_focus_compliant,
+                family_focus_compliance_level=family_focus_compliance_level,
+                family_focus_mismatch_reason=family_focus_mismatch_reason,
                 **focus_record_fields,
                 partial_valid_cases=0,
                 partial_total_cases=len(problems),
@@ -785,6 +955,12 @@ def run_llamea_search(
 
         print(f"  name: {name}", flush=True)
         print(f"  family: {family}", flush=True)
+        if focus_spec:
+            print(
+                f"  family-focus compliance: {family_focus_compliance_level}"
+                + (f" | {family_focus_mismatch_reason}" if family_focus_mismatch_reason else ""),
+                flush=True,
+            )
         print("  search feedback:", flush=True)
 
         eval_results: list[EvaluationResult] = []
@@ -805,6 +981,9 @@ def run_llamea_search(
             "focus_family_step": focus_step,
             "focus_family_index": focus_index,
             "focus_family_total": focus_total,
+            "family_focus_compliant": family_focus_compliant,
+            "family_focus_compliance_level": family_focus_compliance_level,
+            "family_focus_mismatch_reason": family_focus_mismatch_reason,
         }
 
         for problem_index, (instance_name, problem, optimum) in enumerate(problems):
@@ -853,6 +1032,9 @@ def run_llamea_search(
             raw_response_path=str(raw_path),
             prompt_path=str(prompt_path),
             family_desc=fam_desc,
+            family_focus_compliant=family_focus_compliant,
+            family_focus_compliance_level=family_focus_compliance_level,
+            family_focus_mismatch_reason=family_focus_mismatch_reason,
             **focus_record_fields,
             feedback_by_instance=feedback_by_instance,
             search_cost_mean=mean_cost,
@@ -878,6 +1060,9 @@ def run_llamea_search(
                     "selection_score": rec.selection_score,
                     "mean_runtime_s": rec.mean_runtime_s,
                     "record_error": rec.error,
+                    "family_focus_compliant": rec.family_focus_compliant,
+                    "family_focus_compliance_level": rec.family_focus_compliance_level,
+                    "family_focus_mismatch_reason": rec.family_focus_mismatch_reason,
                 }
             )
             enriched_rows.append(enriched)
@@ -909,6 +1094,8 @@ def run_llamea_search(
             "mean_gap_percent",
             "selection_score",
             "mean_runtime_s",
+            "family_focus_compliance_level",
+            "family_focus_mismatch_reason",
             "code_path",
         ]
         existing = [c for c in cols if c in df.columns]

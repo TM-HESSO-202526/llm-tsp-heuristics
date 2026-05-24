@@ -99,3 +99,49 @@ def test_family_focus_uses_local_parent_and_history_per_family():
         assert "Family A" not in prompt3
         assert "Generate the first heuristic" in prompt3
         assert Path(d, "family_focus_summary.csv").exists()
+
+
+def test_family_focus_compliance_is_logged_and_fed_back_to_prompt_history():
+    nn_mst = """# Name: MST Skeleton That Chooses Closest
+
+# Code:
+```python
+class TSPHeuristic:
+    def __call__(self, problem, rng=None):
+        tour = [0]
+        unused = set(range(1, problem.n))
+        while unused:
+            cur = tour[-1]
+            nxt = min(unused, key=lambda j: problem.edge_cost(cur, j))  # closest city
+            tour.append(nxt)
+            unused.remove(nxt)
+        return tour
+```
+"""
+    cfg = _base_config("1+1")
+    cfg["llm"]["max_llm_calls"] = 2
+    cfg["search"].update({
+        "family_focus_mode": True,
+        "family_focus_calls_per_family": 2,
+        "family_focus_plan": [
+            {
+                "id": "mst_skeleton",
+                "name": "MST / tree skeleton construction",
+                "objective": "Build a sparse tree-like skeleton.",
+            }
+        ],
+    })
+    responses = iter([nn_mst, VALID])
+    with tempfile.TemporaryDirectory() as d:
+        df = run_llamea_search(cfg, [("toy", _problem(), 4.0)], lambda _: next(responses), d)
+        assert df.loc[0, "focus_family_id"] == "mst_skeleton"
+        assert df.loc[0, "family"] == "nearest_neighbor"
+        assert df.loc[0, "family_focus_compliance_level"] == "non_compliant"
+        assert df.loc[0, "family_focus_compliant"] is False or df.loc[0, "family_focus_compliant"] == False
+        assert "Nearest-neighbor-like code generated inside MST skeleton block" in df.loc[0, "family_focus_mismatch_reason"]
+        prompt2 = Path(d, "prompts", "prompt_iter_002.txt").read_text(encoding="utf-8")
+        assert "focus_compliance=non_compliant" in prompt2
+        assert "Nearest-neighbor-like code generated inside MST skeleton block" in prompt2
+        summary = Path(d, "family_focus_summary.csv").read_text(encoding="utf-8")
+        assert "non_compliant_attempts" in summary
+        assert "best_family_focus_compliance_level" in summary
