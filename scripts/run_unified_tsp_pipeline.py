@@ -51,28 +51,6 @@ def make_toy_problem(n: int = 100, seed: int = 0, use_candidates: bool = False, 
     )
 
 
-def run_dry_smoke(cfg: dict, artifact_dir: Path) -> None:
-    pop = cfg.get("popmusic", {})
-    runtime = cfg.get("runtime", {})
-    problem = make_toy_problem(
-        n=100,
-        seed=int(runtime.get("global_seed", 0)),
-        use_candidates=bool(pop.get("use_popmusic_candidates", False)),
-        max_k=int(pop.get("max_candidates", 20)),
-    )
-    tour = nearest_neighbor(problem)
-    nn_cost = tour_cost_from_matrix(tour, problem.distance_matrix_for_evaluator())
-    rows = [{"method": "nearest_neighbor", "n": problem.n, "cost": float(nn_cost)}]
-    print("Dry-run smoke test")
-    print(f"n={problem.n} nearest_neighbor_cost={nn_cost:.3f}")
-    if pop.get("use_popmusic_edge_prior"):
-        tour2 = prior_greedy(problem)
-        prior_cost = tour_cost_from_matrix(tour2, problem.distance_matrix_for_evaluator())
-        rows.append({"method": "prior_greedy_placeholder", "n": problem.n, "cost": float(prior_cost)})
-        print(f"prior_greedy_cost={prior_cost:.3f}")
-    pd.DataFrame(rows).to_csv(artifact_dir / "dry_run_smoke_results.csv", index=False)
-
-
 def candidate_paths_for_instance(instance_name: str, root: Path, params: PopmusicParams | None = None) -> list[Path]:
     params = params or PopmusicParams()
     return [
@@ -394,12 +372,9 @@ def write_final_run_summaries(df: pd.DataFrame, artifact_dir: Path, cfg: dict) -
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True, help="YAML run config")
-    parser.add_argument("--dry-run", action="store_true", help="Run a toy smoke test without TSPLIB files or LLM calls")
     args = parser.parse_args()
 
     cfg = load_run_config(args.config)
-    if args.dry_run:
-        cfg.setdefault("runtime", {})["dry_run"] = True
     rc = flatten_runtime_config(cfg)
 
     artifact_dir = make_run_dir(rc.artifact_root, rc.run_name)
@@ -415,7 +390,6 @@ def main() -> None:
     print(f"max_llm_calls: {rc.max_llm_calls}")
     print(f"eval_split: {rc.eval_split}")
     print(f"candidate_timeout_s: {rc.candidate_timeout_s}")
-    print(f"evaluation_timeout_s: {rc.evaluation_timeout_s}")
     print(f"use_popmusic_candidates: {rc.use_popmusic_candidates}")
     print(f"use_popmusic_edge_prior: {rc.use_popmusic_edge_prior}")
     print(f"effective_candidate_lists_exposed: {bool(rc.use_popmusic_candidates)}")
@@ -444,18 +418,6 @@ def main() -> None:
         if len(missing_candidates):
             print("Missing candidate files will be generated immediately with LKH/POPMUSIC during problem loading.")
 
-    if rc.dry_run:
-        run_dry_smoke(cfg, artifact_dir)
-        status = {
-            "status": "dry_run_completed",
-            "artifact_dir": str(artifact_dir),
-            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-        }
-        save_json(artifact_dir / "run_status.json", status)
-        (artifact_dir / "pipeline_status.txt").write_text("dry_run_completed\n", encoding="utf-8")
-        print("Dry-run completed.")
-        print(f"Artifacts initialized in: {artifact_dir}")
-        return
 
     status = {
         "status": "running_llamea",

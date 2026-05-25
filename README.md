@@ -64,7 +64,6 @@ LLM_MODEL = "llama-3.3-70b-versatile"
 MAX_LLM_CALLS = 40
 GLOBAL_SEED = 12345
 CANDIDATE_TIMEOUT_S = 60
-EVALUATION_TIMEOUT_S = 120
 
 SELECTION_STRATEGY = "1+1"       # "1+1" = elitist best-so-far parent; "1,1" = latest sequential parent
 HISTORY_LIMIT = 20

@@ -52,7 +52,6 @@ def test_family_focus_runtime_config_derives_total_calls():
     globals_dict = {
         "RUN_NAME": "pytest_family_focus",
         "SMOKE_TEST": False,
-        "DRY_RUN": False,
         "MAX_LLM_CALLS": 40,
         "FAMILY_FOCUS_MODE": True,
         "FAMILY_FOCUS_CALLS_PER_FAMILY": 3,

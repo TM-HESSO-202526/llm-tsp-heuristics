@@ -7,10 +7,9 @@ import yaml
 
 
 DEFAULTS: dict[str, Any] = {
-    # Run identity. The TSP repo is always LLaMEA-mode; no separate mode switch.
+    # Run identity.
     "RUN_NAME": "tsp_llamea_popmusic_train",
     "SMOKE_TEST": False,
-    "DRY_RUN": False,
 
     # LLM provider
     "LLM_PROVIDER": "groq",
@@ -48,7 +47,6 @@ DEFAULTS: dict[str, Any] = {
     # Runtime and evaluation
     "GLOBAL_SEED": 12345,
     "CANDIDATE_TIMEOUT_S": 60,
-    "EVALUATION_TIMEOUT_S": 120,
     "EVAL_SPLIT": "train",
 
     # TSP data / artifact paths
@@ -98,11 +96,10 @@ def build_runtime_config_from_notebook_globals(globals_dict: dict[str, Any]) -> 
     The launcher notebook is intentionally only a control panel. This function
     converts the variables declared in the notebook into the nested YAML-style
     config consumed by the backend scripts, mirroring the clustering repo
-    pattern. TSP has no experiment-mode switch: every run uses the LLaMEA loop.
+    pattern.
     """
     values = {k: globals_dict.get(k, v) for k, v in DEFAULTS.items()}
     smoke_test = _as_bool(values["SMOKE_TEST"])
-    dry_run = _as_bool(values["DRY_RUN"])
     family_focus_mode = _as_bool(values["FAMILY_FOCUS_MODE"])
     family_focus_calls_per_family = max(1, int(values["FAMILY_FOCUS_CALLS_PER_FAMILY"]))
     raw_family_focus_plan = values.get("FAMILY_FOCUS_PLAN") or []
@@ -148,10 +145,8 @@ def build_runtime_config_from_notebook_globals(globals_dict: dict[str, Any]) -> 
         "runtime": {
             "global_seed": int(values["GLOBAL_SEED"]),
             "candidate_timeout_s": float(values["CANDIDATE_TIMEOUT_S"]),
-            "evaluation_timeout_s": float(values["EVALUATION_TIMEOUT_S"]),
             "eval_split": values["EVAL_SPLIT"],
             "smoke_test": smoke_test,
-            "dry_run": dry_run,
         },
         "suite": {
             "instance_root": values["INSTANCE_ROOT"],
@@ -225,11 +220,9 @@ def print_effective_config(effective: dict[str, Any]) -> None:
         for i, fam in enumerate(plan, start=1):
             print(f"  [{i}] {fam.get('id')} — {fam.get('name')}")
     print(f"smoke_test: {runtime.get('smoke_test')}")
-    print(f"dry_run: {runtime.get('dry_run')}")
     print(f"eval_split: {runtime.get('eval_split')}")
     print(f"global_seed: {runtime.get('global_seed')}")
     print(f"candidate_timeout_s: {runtime.get('candidate_timeout_s')}")
-    print(f"evaluation_timeout_s: {runtime.get('evaluation_timeout_s')}")
     print(f"use_popmusic_candidates: {pop.get('use_popmusic_candidates')}")
     print(f"use_popmusic_edge_prior: {pop.get('use_popmusic_edge_prior')}")
     print(f"popmusic_prior_mode: {pop.get('prior_mode')}")

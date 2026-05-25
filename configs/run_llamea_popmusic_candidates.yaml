@@ -28,10 +28,8 @@ search:
 runtime:
   global_seed: 12345
   candidate_timeout_s: 60
-  evaluation_timeout_s: 120
   eval_split: train
   smoke_test: false
-  dry_run: false
   partial_failure_penalty: 200.0
 
 

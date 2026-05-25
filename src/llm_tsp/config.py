@@ -36,10 +36,6 @@ def load_run_config(path: str | Path) -> dict[str, Any]:
 class RuntimeConfig:
     """Flattened runtime view used by scripts and notebooks.
 
-    The cleaned TSP repository is always in LLaMEA mode. There is no
-    experiment-mode switch anymore: POPMUSIC/candidate-prior behavior is a
-    layer inside the same LLaMEA loop, just like the big mode toggles in the
-    clustering launcher.
     """
 
     run_name: str = "tsp_llamea_run"
@@ -47,9 +43,7 @@ class RuntimeConfig:
     max_llm_calls: int = 40
     eval_split: str = "train"
     candidate_timeout_s: float = 60.0
-    evaluation_timeout_s: float = 120.0
     smoke_test: bool = False
-    dry_run: bool = False
 
     # LLM/provider controls
     llm_provider: str = "groq"
@@ -103,9 +97,7 @@ def flatten_runtime_config(cfg: dict[str, Any]) -> RuntimeConfig:
         max_llm_calls=int(llm.get("max_llm_calls", 40)),
         eval_split=runtime.get("eval_split", "train"),
         candidate_timeout_s=float(runtime.get("candidate_timeout_s", 60)),
-        evaluation_timeout_s=float(runtime.get("evaluation_timeout_s", 120)),
         smoke_test=bool(runtime.get("smoke_test", False)),
-        dry_run=bool(runtime.get("dry_run", False)),
         llm_provider=str(llm.get("provider", "groq")),
         llm_model=str(llm.get("model", "llama-3.3-70b-versatile")),
         temperature=float(llm.get("temperature", 0.8)),

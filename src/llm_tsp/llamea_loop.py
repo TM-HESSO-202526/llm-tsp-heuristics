@@ -994,7 +994,7 @@ def run_llamea_search(
                 seed=int(runtime_cfg.get("global_seed", 0)) + 1000 * attempt + problem_index,
                 # Final tour validity is normal TSP permutation validity.
                 # Candidate lists guide construction; cost is measured on full TSPLIB distance.
-                timeout_s=float(runtime_cfg.get("evaluation_timeout_s", 0) or 0),
+                timeout_s=float(runtime_cfg.get("candidate_timeout_s", 0) or 0),
             )
             eval_results.append(res)
             if res.traceback:
