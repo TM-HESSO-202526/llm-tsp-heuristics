@@ -376,7 +376,8 @@ def _selection_instruction(
                 "Selection mode: 1,1 sequential mutation chain with historical family avoidance.\n"
                 "The selected parent below is the most recent heuristic in the chain, not necessarily the best-so-far, "
                 "and it is a reference point rather than a structure to preserve. "
-                "Make a genuine family-level change when the current parent belongs to a banned or over-produced mechanism. "
+                "If the current parent belongs to a banned historical family, such as nearest-neighbor, cheapest/regret insertion, "
+                "simple greedy construction, or 2-opt-centered cleanup, make a genuine family-level change instead of continuing that mechanism. "
                 "Do not merely rename the parent, tune constants, add restarts, or add a small cleanup step to the same family. "
                 "The goal is to continue the chain with a valid, scalable heuristic from a structurally different construction family."
             )

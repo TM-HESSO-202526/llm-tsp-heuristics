@@ -97,7 +97,9 @@ def test_avoidance_changes_1comma1_valid_parent_instruction():
     )
     assert "1,1 sequential mutation chain with historical family avoidance" in prompt
     assert "reference point rather than a structure to preserve" in prompt
-    assert "Make a genuine family-level change" in prompt
+    assert "nearest-neighbor, cheapest/regret insertion" in prompt
+    assert "simple greedy construction, or 2-opt-centered cleanup" in prompt
+    assert "make a genuine family-level change" in prompt
 
 
 def test_non_avoidance_keeps_standard_1plus1_instruction():
