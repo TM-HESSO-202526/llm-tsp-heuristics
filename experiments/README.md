@@ -18,3 +18,8 @@ Recommended artifact contents per run:
 - `split_level_summary.csv`
 - `overall_summary.csv`
 - zipped bundle for final preservation
+
+## Selected TSP heuristics for final evaluation
+
+Final selected TSP heuristics are stored in `selected_tsp_heuristics_final_by_signal/`, grouped by available signal: distance-only, candidate-list, edge-prior, and edge-prior + candidate-list.
+

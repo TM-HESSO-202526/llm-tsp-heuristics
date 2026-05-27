@@ -1,0 +1,18 @@
+Selection ID: TSP_FAST_CAND_PRIOR_215145_037
+Signal category: edge_prior_plus_candidate_list
+Folder: 02_fast_candidate_prior_215145_iter037
+Candidate name: TSP Community Detection Heuristic with Prior-Guided Edge Selection and Local Refinement
+Family: candidate_prior_constructive
+Run: tsp_llamea_popmusic_train_20260522_215145
+Attempt: 37
+Mode: cand=True, prior=True, hist=True, ff=False
+Mean train/search gap: 7.3497945730728516
+Mean val gap: None
+Mean test gap: None
+Mean all-7 gap: None
+Runtime mean s: 0.0276370843251546
+Reason: Insanely fast candidate+prior community/cluster-style heuristic; weaker gap than best prior-only but excellent runtime.
+
+Original/source path: /content/drive/MyDrive/TM/llm-tsp-runs/tsp_llamea_popmusic_train_20260522_215145/codes/iter_037_8ec65728ad62a63f.py
+Copied code file: iter_037_8ec65728ad62a63f.py
+Details copied: search_detail_iter_037.csv

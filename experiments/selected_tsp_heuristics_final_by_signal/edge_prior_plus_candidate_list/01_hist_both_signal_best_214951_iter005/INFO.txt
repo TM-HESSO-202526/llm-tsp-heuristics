@@ -1,0 +1,18 @@
+Selection ID: TSP_NEW_HIST_BOTH_SIGNAL_BEST_214951_005
+Signal category: edge_prior_plus_candidate_list
+Folder: 01_hist_both_signal_best_214951_iter005
+Candidate name: TSP Region-Based Partitioning Heuristic
+Family: nearest_neighbor
+Run: tsp_llamea_popmusic_train_20260522_214951
+Attempt: 5.0
+Mode: cand=True, prior=True, hist=True, ff=False
+Mean train/search gap: 3.623503887111548
+Mean val gap: nan
+Mean test gap: nan
+Mean all-7 gap: nan
+Runtime mean s: 0.9683668613433838
+Reason: Best historical-avoidance candidate with both POPMUSIC candidates and edge prior exposed.
+
+Original/source path: TM/llm-tsp-runs/tsp_llamea_popmusic_train_20260522_214951/generated_code/attempt_0005_b3ed22534376ddc5.py
+Copied code file: TSP_NEW_HIST_BOTH_SIGNAL_BEST_214951_005__TSP_Region-Based_Partitioning_Heuristic.py
+Details copied: TSP_NEW_HIST_BOTH_SIGNAL_BEST_214951_005__search_detail.csv

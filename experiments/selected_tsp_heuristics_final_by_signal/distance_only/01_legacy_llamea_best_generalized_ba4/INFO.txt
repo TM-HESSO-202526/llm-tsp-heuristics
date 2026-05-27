@@ -1,0 +1,18 @@
+Selection ID: TSP_LEGACY_LLAMEA_BEST_GENERALIZED_BA4
+Signal category: distance_only
+Folder: 01_legacy_llamea_best_generalized_ba4
+Candidate name: ba4bf43bdc7c
+Family: tsplib
+Run: 1 full 8b
+Attempt: nan
+Mode: legacy_constructor_plus_evaluator_cleanup
+Mean train/search gap: 8.69891932433101
+Mean val gap: 7.11212863912133
+Mean test gap: 17.110960761656397
+Mean all-7 gap: 10.97400290836958
+Runtime mean s: nan
+Reason: Best legacy LLaMEA+cleanup generalization candidate; kept as historical comparison.
+
+Original/source path: TM/Runs/Runs semaine 5/1 full 8b/candidates.jsonl#ba4bf43bdc7c
+Copied code file: TSP_LEGACY_LLAMEA_BEST_GENERALIZED_BA4__ba4bf43bdc7c.py
+Details copied: TSP_LEGACY_LLAMEA_BEST_GENERALIZED_BA4__candidate_meta.json, TSP_LEGACY_LLAMEA_BEST_GENERALIZED_BA4__per_instance_rows.csv

@@ -1,0 +1,18 @@
+Selection ID: TSP_FF_GRID_BEST_100159_072
+Signal category: distance_only
+Folder: 03_family_focus_grid_best_100159_iter072
+Candidate name: Grid Sector Decomposition TSP Heuristic with Enhanced Radial Ordering and Local Path Refining (GSDTH-ERPR-Improved)
+Family: nearest_neighbor_2opt
+Run: tsp_llamea_popmusic_train_20260524_100159
+Attempt: 72.0
+Mode: cand=False, prior=False, hist=False, ff=True
+Mean train/search gap: 11.566706655835477
+Mean val gap: nan
+Mean test gap: nan
+Mean all-7 gap: nan
+Runtime mean s: 12.137539943059286
+Reason: Best raw family-focus grid/sector candidate; hybridized but strong.
+
+Original/source path: TM/llm-tsp-runs/tsp_llamea_popmusic_train_20260524_100159/generated_code/attempt_0072_78671d91a0d4287c.py
+Copied code file: TSP_FF_GRID_BEST_100159_072__Grid_Sector_Decomposition_TSP_Heuristic_with_Enhanced_Radial_Ordering_and_Local_Path_Refining_GSDTH-ERPR-Improved_.py
+Details copied: TSP_FF_GRID_BEST_100159_072__search_detail.csv

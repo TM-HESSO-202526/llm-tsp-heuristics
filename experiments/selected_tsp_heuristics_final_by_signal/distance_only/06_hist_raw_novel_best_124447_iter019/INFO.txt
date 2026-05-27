@@ -1,0 +1,18 @@
+Selection ID: TSP_NEW_HIST_RAW_NOVEL_BEST_124447_019
+Signal category: distance_only
+Folder: 06_hist_raw_novel_best_124447_iter019
+Candidate name: TSP Heuristic using a Hierarchical Clustering-based Approach with Enhanced Candidate Selection and Limited 2-opt Improve
+Family: candidate_prior_2opt
+Run: tsp_llamea_popmusic_train_20260522_124447
+Attempt: 19.0
+Mode: cand=False, prior=False, hist=True, ff=False
+Mean train/search gap: 11.294998076586657
+Mean val gap: nan
+Mean test gap: nan
+Mean all-7 gap: nan
+Runtime mean s: 7.741698106129964
+Reason: Best raw historical-family-avoidance no-prior/no-candidate candidate.
+
+Original/source path: TM/llm-tsp-runs/tsp_llamea_popmusic_train_20260522_124447/generated_code/attempt_0019_68ac806e60a651a3.py
+Copied code file: TSP_NEW_HIST_RAW_NOVEL_BEST_124447_019__TSP_Heuristic_using_a_Hierarchical_Clustering-based_Approach_with_Enhanced_Candidate_Selection_and_Limited_2-opt_Improve.py
+Details copied: TSP_NEW_HIST_RAW_NOVEL_BEST_124447_019__search_detail.csv
