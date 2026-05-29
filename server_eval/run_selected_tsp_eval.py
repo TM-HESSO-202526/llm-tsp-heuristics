@@ -50,6 +50,10 @@ RAW_COLUMNS = [
     "heuristic_id",
     "heuristic_label",
     "code_path",
+    "requires_candidates",
+    "requires_edge_prior",
+    "interface_status",
+    "interface_note",
     "instance_name",
     "split",
     "n",
@@ -173,6 +177,9 @@ class HeuristicSpec:
     heuristic_id: str
     heuristic_label: str
     code_path: Path
+    requires_candidates: bool = False
+    requires_edge_prior: bool = False
+    interface_note: str = ""
 
 
 def load_instances(
@@ -224,6 +231,58 @@ def load_instances(
     return rows
 
 
+
+def infer_interface_requirements(code_path: Path) -> tuple[bool, bool, str]:
+    """Static, conservative scan of a selected heuristic's required signals.
+
+    This catches the important final-eval mismatch cases: heuristics stored in
+    the nominal distance_only folder that still access problem.cand,
+    problem.neighbors(), or problem.prior(). It is intentionally simple and
+    transparent rather than trying to execute generated code.
+    """
+    text = code_path.read_text(encoding="utf-8", errors="ignore")
+    needs_candidates = any(tok in text for tok in [
+        "problem.cand",
+        "problem.neighbors",
+        "candidate_neighbors",
+        "cand[",
+        " cand ",
+    ])
+    needs_prior = any(tok in text for tok in [
+        "problem.prior",
+        "prior_rows",
+        "prior_map",
+        "edge_prior",
+    ])
+    notes = []
+    if "problem.cand" in text:
+        notes.append("uses problem.cand")
+    if "problem.neighbors" in text:
+        notes.append("uses problem.neighbors()")
+    if "problem.prior" in text:
+        notes.append("uses problem.prior()")
+    if "prior_rows" in text:
+        notes.append("uses prior_rows")
+    return needs_candidates, needs_prior, "; ".join(notes)
+
+
+def signal_provides(signal_category: str) -> tuple[bool, bool]:
+    has_candidates = signal_category in {"candidate_list", "edge_prior_plus_candidate_list"}
+    has_prior = signal_category in {"edge_prior", "edge_prior_plus_candidate_list"}
+    return has_candidates, has_prior
+
+
+def signal_interface_status(h: HeuristicSpec) -> tuple[str, str]:
+    has_candidates, has_prior = signal_provides(h.signal_category)
+    problems = []
+    if h.requires_candidates and not has_candidates:
+        problems.append("requires candidate-list access")
+    if h.requires_edge_prior and not has_prior:
+        problems.append("requires edge-prior access")
+    if problems:
+        return "mismatch", "; ".join(problems)
+    return "ok", ""
+
 def discover_heuristics(selected_root: Path, signal_mode: str, max_heuristics: int) -> list[HeuristicSpec]:
     if not selected_root.exists():
         raise FileNotFoundError(f"Missing selected TSP root: {selected_root}")
@@ -245,12 +304,16 @@ def discover_heuristics(selected_root: Path, signal_mode: str, max_heuristics: i
                 if not py_files:
                     continue
                 code = py_files[0]
+            needs_candidates, needs_prior, interface_note = infer_interface_requirements(code)
             specs.append(
                 HeuristicSpec(
                     signal_category=mode,
                     heuristic_id=hdir.name,
                     heuristic_label=hdir.name,
                     code_path=code,
+                    requires_candidates=needs_candidates,
+                    requires_edge_prior=needs_prior,
+                    interface_note=interface_note,
                 )
             )
     if max_heuristics and max_heuristics > 0:
@@ -387,6 +450,19 @@ def normalize_tour(raw_tour: Any, n: int) -> np.ndarray:
     return arr
 
 
+
+def heuristic_interface_fields(h: HeuristicSpec) -> dict[str, Any]:
+    status, note = signal_interface_status(h)
+    full_note = h.interface_note
+    if note:
+        full_note = (full_note + "; " if full_note else "") + note
+    return {
+        "requires_candidates": bool(h.requires_candidates),
+        "requires_edge_prior": bool(h.requires_edge_prior),
+        "interface_status": status,
+        "interface_note": full_note,
+    }
+
 def run_one(
     h: HeuristicSpec,
     inst: TSPInstance,
@@ -421,6 +497,7 @@ def run_one(
             "heuristic_id": h.heuristic_id,
             "heuristic_label": h.heuristic_label,
             "code_path": str(h.code_path.relative_to(REPO_ROOT) if h.code_path.is_relative_to(REPO_ROOT) else h.code_path),
+            **heuristic_interface_fields(h),
             "instance_name": inst.name,
             "split": inst.split,
             "n": inst.n,
@@ -452,6 +529,7 @@ def error_row(h, inst, rep, seed, start, status, error_type, error_message, stdo
         "heuristic_id": h.heuristic_id,
         "heuristic_label": h.heuristic_label,
         "code_path": str(h.code_path.relative_to(REPO_ROOT) if h.code_path.is_relative_to(REPO_ROOT) else h.code_path),
+        **heuristic_interface_fields(h),
         "instance_name": inst.name,
         "split": inst.split,
         "n": inst.n,
@@ -647,7 +725,11 @@ def summarize(raw_path: Path, out_dir: Path):
                     "max_n": int(byn["n"].max()) if len(byn) else np.nan,
                     "speed_class": "insufficient_sizes",
                 })
-    pd.DataFrame(comp).sort_values(["signal_category", "beta"], na_position="last").to_csv(out_dir / "complexity_fit.csv", index=False)
+    comp_cols = ["signal_category", "heuristic_id", "heuristic_label", "beta", "a", "r2_loglog", "n_points", "min_n", "max_n", "speed_class"]
+    comp_df = pd.DataFrame(comp, columns=comp_cols)
+    if not comp_df.empty:
+        comp_df = comp_df.sort_values(["signal_category", "beta"], na_position="last")
+    comp_df.to_csv(out_dir / "complexity_fit.csv", index=False)
 
 
 def main():
@@ -670,6 +752,7 @@ def main():
     ap.add_argument("--output-root", default="/tmp/tsp_eval_results")
     ap.add_argument("--output-dir", default="")
     ap.add_argument("--resume", action="store_true")
+    ap.add_argument("--allow-interface-mismatch", action="store_true", help="Include selected heuristics even if their code requests candidate/prior signals not provided by their folder mode.")
     args = ap.parse_args()
 
     out_dir = Path(args.output_dir) if args.output_dir else Path(args.output_root) / f"tsp_{args.signal_mode}_{time.strftime('%Y%m%d_%H%M%S')}"
@@ -693,7 +776,36 @@ def main():
     candidate_cache_dir = Path(args.candidate_cache_dir).expanduser().resolve() if args.candidate_cache_dir else Path("__missing_candidate_cache__")
     edge_prior_cache_dir = Path(args.edge_prior_cache_dir).expanduser().resolve() if args.edge_prior_cache_dir else Path("__missing_edge_prior_cache__")
 
-    heuristics = discover_heuristics(selected_root, args.signal_mode, args.max_heuristics)
+    heuristics_all = discover_heuristics(selected_root, args.signal_mode, 0)
+
+    audit_rows = []
+    heuristics = []
+    for h in heuristics_all:
+        status, reason = signal_interface_status(h)
+        audit_rows.append({
+            "signal_category": h.signal_category,
+            "heuristic_id": h.heuristic_id,
+            "code_path": str(h.code_path.relative_to(REPO_ROOT) if h.code_path.is_relative_to(REPO_ROOT) else h.code_path),
+            "requires_candidates": bool(h.requires_candidates),
+            "requires_edge_prior": bool(h.requires_edge_prior),
+            "interface_status": status,
+            "interface_note": h.interface_note,
+            "skip_reason": reason,
+        })
+        if status == "ok" or args.allow_interface_mismatch:
+            heuristics.append(h)
+
+    pd.DataFrame(audit_rows).to_csv(out_dir / "interface_audit.csv", index=False)
+    skipped = [r for r in audit_rows if r["interface_status"] != "ok"]
+    if skipped and not args.allow_interface_mismatch:
+        print("Interface audit: skipped heuristics whose code requests unavailable signals:")
+        for r in skipped:
+            print(f"  - {r['signal_category']}/{r['heuristic_id']}: {r['skip_reason']} ({r['interface_note']})")
+    if args.max_heuristics and args.max_heuristics > 0:
+        heuristics = heuristics[: int(args.max_heuristics)]
+    if not heuristics:
+        raise ValueError("No compatible selected heuristics remain after strict interface filtering. Use --allow-interface-mismatch only for diagnostic replay.")
+
     instances = load_instances(
         instance_root=instance_root,
         optima_csv=optima_csv,
@@ -705,7 +817,13 @@ def main():
     print(f"Signal mode: {args.signal_mode}")
     print(f"Heuristics: {len(heuristics)}")
     for h in heuristics:
-        print(f"  - {h.signal_category}/{h.heuristic_id} ({h.code_path.relative_to(REPO_ROOT)})")
+        req = []
+        if h.requires_candidates:
+            req.append("candidates")
+        if h.requires_edge_prior:
+            req.append("prior")
+        req_s = ",".join(req) if req else "distance"
+        print(f"  - {h.signal_category}/{h.heuristic_id} [{req_s}] ({h.code_path.relative_to(REPO_ROOT)})")
     print(f"Instances: {len(instances)}")
     for inst in instances:
         print(f"  - {inst.name} split={inst.split} n={inst.n} opt={inst.optimum:g}")

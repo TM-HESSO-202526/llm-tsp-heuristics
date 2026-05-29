@@ -50,7 +50,7 @@ $TIMEOUT_S = 300
 # Use ALL for all instances present in the local/server input folder.
 # Safer explicit 10-instance list:
 # $INSTANCES = "dsj1000,pr1002,d1291,fl1400,pcb1173,rl1304,u1817,pr2392,rl1889,pcb3038"
-$INSTANCES = "ALL"
+$INSTANCES = "dsj1000,pr1002,d1291,fl1400,pcb1173,rl1304,u1817,pr2392,rl1889,pcb3038"
 
 # Use all, train, val, test, or comma list like "train,val".
 $SPLITS = "all"
@@ -58,6 +58,9 @@ $SPLITS = "all"
 $GLOBAL_SEED = 12345
 $MAX_CANDIDATES = 20
 $PRIOR_MODE = "frequency"
+# Keep strict by default: incompatible selected heuristics are skipped rather than crashing.
+# Set to "1" only for diagnostic replay of historical misclassified selected files.
+$ALLOW_INTERFACE_MISMATCH = "0"
 
 # Resume mode:
 # Leave empty for a new run.
@@ -138,6 +141,7 @@ Write-Host "Timeout seconds: $TIMEOUT_S"
 Write-Host "Instance root:   $REMOTE_INSTANCE_DIR"
 Write-Host "Candidate cache: $REMOTE_CANDIDATE_CACHE_DIR"
 Write-Host "Edge-prior dir:  $REMOTE_EDGE_PRIOR_CACHE_DIR"
+Write-Host ("Strict interface: " + [bool]($ALLOW_INTERFACE_MISMATCH -ne "1"))
 if ($RESUME_FLAG -eq "1") {
     Write-Host "Resume folder:   $REMOTE_OUT_DIR"
 }
@@ -189,6 +193,7 @@ SPLITS="$SPLITS" \
 GLOBAL_SEED="$GLOBAL_SEED" \
 MAX_CANDIDATES="$MAX_CANDIDATES" \
 PRIOR_MODE="$PRIOR_MODE" \
+ALLOW_INTERFACE_MISMATCH="$ALLOW_INTERFACE_MISMATCH" \
 bash server_eval/run_tsp_eval.sh
 "@
 

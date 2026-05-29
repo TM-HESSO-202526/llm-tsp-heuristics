@@ -78,3 +78,38 @@ edge_prior_plus_candidate_list
 ```
 
 Distance-only runs need only the `.tsp` files and the optima CSV.
+
+## Current 10-instance final-eval input set
+
+The server launcher defaults to these 10 instances when the corresponding private
+files are present locally/server-side:
+
+```text
+dsj1000, pr1002, d1291, fl1400, pcb1173, rl1304, u1817,
+pr2392, rl1889, pcb3038
+```
+
+The three added instances are marked with split `extended` in
+`data/tsp_instances_opt.csv`. Use `SPLITS=all` for the full 10-instance run.
+
+## Strict signal-interface filtering
+
+The selected folders contain historical artifacts. Two heuristics were found in
+`distance_only` even though their code requests candidate/prior interfaces:
+
+```text
+distance_only/01_legacy_llamea_best_generalized_ba4  -> uses problem.cand
+distance_only/06_hist_raw_novel_best_124447_iter019  -> uses problem.neighbors() and problem.prior()
+```
+
+By default the server evaluator runs in strict mode and skips heuristics whose
+code requests signals not available in their nominal folder. The audit is saved
+in every output folder as `interface_audit.csv`, and the static repo audit is:
+
+```text
+experiments/selected_tsp_heuristics_final_by_signal/STRICT_SIGNAL_INTERFACE_AUDIT.csv
+```
+
+Only set `ALLOW_INTERFACE_MISMATCH=1` in the Windows launcher for diagnostic
+replay of the historical selection; do not use it for the strict final signal-mode
+comparison.

@@ -1,5 +1,4 @@
 instance,split,optimum
-
 dsj1000,train,18659688
 pr1002,train,259045
 d1291,train,50801
@@ -7,3 +6,6 @@ fl1400,val,20127
 pcb1173,val,56892
 rl1304,test,252948
 u1817,test,57201
+rl1889,extended,316536
+pr2392,extended,378032
+pcb3038,extended,137694

@@ -8,7 +8,7 @@ cd "$REPO_DIR"
 SIGNAL_MODE="${SIGNAL_MODE:-all}"
 INSTANCE_ROOT="${INSTANCE_ROOT:?INSTANCE_ROOT is required}"
 CANDIDATE_CACHE_DIR="${CANDIDATE_CACHE_DIR:-}"
-EDGE_PRIOR_CACHE_DIR="${EDGE_PRIOR_CACHE_DIR:-}"
+EDGE_PRIOR_CACHE_DIR="${EDGE_PRIOR_CACHE_DIR:-${EDGE_PRIOR_DIR:-}}"
 OPTIMA_CSV="${OPTIMA_CSV:-data/tsp_instances_opt.csv}"
 OUT_ROOT="${OUT_ROOT:-$HOME/workspace/TM/final-results/tsp_eval}"
 OUT_DIR="${OUT_DIR:-}"
@@ -22,6 +22,7 @@ SPLITS="${SPLITS:-all}"
 GLOBAL_SEED="${GLOBAL_SEED:-12345}"
 MAX_CANDIDATES="${MAX_CANDIDATES:-20}"
 PRIOR_MODE="${PRIOR_MODE:-frequency}"
+ALLOW_INTERFACE_MISMATCH="${ALLOW_INTERFACE_MISMATCH:-0}"
 
 mkdir -p "$OUT_ROOT"
 
@@ -44,6 +45,12 @@ else
   RESUME_FLAG=""
 fi
 
+if [ "$ALLOW_INTERFACE_MISMATCH" = "1" ]; then
+  INTERFACE_FLAG="--allow-interface-mismatch"
+else
+  INTERFACE_FLAG=""
+fi
+
 python server_eval/run_selected_tsp_eval.py \
   --signal-mode "$SIGNAL_MODE" \
   --selected-root "experiments/selected_tsp_heuristics_final_by_signal" \
@@ -62,4 +69,5 @@ python server_eval/run_selected_tsp_eval.py \
   --prior-mode "$PRIOR_MODE" \
   --output-root "$OUT_ROOT" \
   --output-dir "$OUT_DIR" \
-  $RESUME_FLAG
+  $RESUME_FLAG \
+  $INTERFACE_FLAG
