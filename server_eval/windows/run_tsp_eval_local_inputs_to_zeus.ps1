@@ -209,7 +209,7 @@ $LOCAL_LOG_DIR = Join-Path $LOCAL_RESULTS_DIR "logs"
 New-Item -ItemType Directory -Force -Path $LOCAL_LOG_DIR | Out-Null
 $LOCAL_LOG_FILE = Join-Path $LOCAL_LOG_DIR ("tsp_eval_" + (Get-Date -Format "yyyyMMdd_HHmmss") + ".log")
 
-$remoteCommands | ssh $REMOTE $sshRunCommand 2>&1 | Tee-Object -FilePath $LOCAL_LOG_FILE
+$remoteCommands | ssh $REMOTE $sshRunCommand | Tee-Object -FilePath $LOCAL_LOG_FILE
 $remoteExit = $LASTEXITCODE
 if ($remoteExit -ne 0) {
     Write-Host "ERROR: Remote TSP evaluation failed. Log saved to: $LOCAL_LOG_FILE"
