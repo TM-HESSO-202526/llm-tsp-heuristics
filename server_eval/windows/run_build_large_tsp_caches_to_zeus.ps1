@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # Build large TSP LKH/POPMUSIC candidate and edge-prior caches on IICT server
 #
 # Default target: Zeus. Change $SERVER_NAME if you use another server.
@@ -91,7 +91,7 @@ mkdir -p $REMOTE_RESULTS_ROOT
 LOG="$REMOTE_RESULTS_ROOT/build_large_tsp_caches_date +%Y%m%d_%H%M%S.log"
 # The weird placeholders are replaced below to avoid PowerShell expanding bash date.
 "@
-$remoteCommands = $remoteCommands.Replace([char]27, '$(')
+$remoteCommands = $remoteCommands.Replace(([string][char]27), '$(')
 $remoteCommands += @"
 
 python -u server_eval/build_large_tsp_caches.py \
@@ -131,3 +131,4 @@ Write-Host "Check logs:"
 Write-Host ("  ssh {0} 'ls -lh {1}; tail -80 {1}/*.log'" -f $REMOTE, $REMOTE_RESULTS_ROOT)
 Write-Host "Check output files:"
 Write-Host ("  ssh {0} 'ls -lh {1}/usa13509_cand-popmusic-k20-s14-sol20-nn5-tr1.cand {2}/pla7397_popmusic_edge_prior_runs30_topk5.npz {2}/usa13509_popmusic_edge_prior_runs30_topk5.npz 2>/dev/null'" -f $REMOTE, $REMOTE_CANDIDATE_CACHE_DIR, $REMOTE_EDGE_PRIOR_CACHE_DIR)
+
