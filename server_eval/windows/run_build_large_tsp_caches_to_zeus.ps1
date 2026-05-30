@@ -126,8 +126,8 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Host "=== STARTED ==="
 Write-Host "Attach/live view:"
-Write-Host "  ssh $REMOTE \"tmux attach -t $TMUX_SESSION\""
+Write-Host ("  ssh {0} 'tmux attach -t {1}'" -f $REMOTE, $TMUX_SESSION)
 Write-Host "Check logs:"
-Write-Host "  ssh $REMOTE \"ls -lh $REMOTE_RESULTS_ROOT && tail -80 $REMOTE_RESULTS_ROOT/*.log\""
+Write-Host ("  ssh {0} 'ls -lh {1}; tail -80 {1}/*.log'" -f $REMOTE, $REMOTE_RESULTS_ROOT)
 Write-Host "Check output files:"
-Write-Host "  ssh $REMOTE \"ls -lh $REMOTE_CANDIDATE_CACHE_DIR/usa13509_cand-popmusic-k20-s14-sol20-nn5-tr1.cand $REMOTE_EDGE_PRIOR_CACHE_DIR/pla7397_popmusic_edge_prior_runs30_topk5.npz $REMOTE_EDGE_PRIOR_CACHE_DIR/usa13509_popmusic_edge_prior_runs30_topk5.npz 2>/dev/null\""
+Write-Host ("  ssh {0} 'ls -lh {1}/usa13509_cand-popmusic-k20-s14-sol20-nn5-tr1.cand {2}/pla7397_popmusic_edge_prior_runs30_topk5.npz {2}/usa13509_popmusic_edge_prior_runs30_topk5.npz 2>/dev/null'" -f $REMOTE, $REMOTE_CANDIDATE_CACHE_DIR, $REMOTE_EDGE_PRIOR_CACHE_DIR)
