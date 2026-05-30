@@ -132,3 +132,4 @@ Write-Host ("  ssh {0} 'ls -lh {1}; tail -80 {1}/*.log'" -f $REMOTE, $REMOTE_RES
 Write-Host "Check output files:"
 Write-Host ("  ssh {0} 'ls -lh {1}/usa13509_cand-popmusic-k20-s14-sol20-nn5-tr1.cand {2}/pla7397_popmusic_edge_prior_runs30_topk5.npz {2}/usa13509_popmusic_edge_prior_runs30_topk5.npz 2>/dev/null'" -f $REMOTE, $REMOTE_CANDIDATE_CACHE_DIR, $REMOTE_EDGE_PRIOR_CACHE_DIR)
 
+

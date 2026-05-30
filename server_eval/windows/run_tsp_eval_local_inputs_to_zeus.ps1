@@ -41,16 +41,16 @@ $LOCAL_RESULTS_DIR = "D:\Users\antho\TM\server_eval_results"
 #   edge_prior_plus_candidate_list
 #   all
 # ------------------------------
-$SIGNAL_MODE = "edge_prior_plus_candidate_list"
-$REPS = 1
+$SIGNAL_MODE = "distance_only"
+$REPS = 10
 $MAX_HEURISTICS = 1000
 $MAX_INSTANCES = 1000
-$TIMEOUT_S = 300
+$TIMEOUT_S = 600
 
 # Use ALL for all instances present in the local/server input folder.
 # Safer explicit 10-instance list:
 # $INSTANCES = "dsj1000,pr1002,d1291,fl1400,pcb1173,rl1304,u1817,pr2392,rl1889,pcb3038"
-$INSTANCES = "dsj1000,pr1002,d1291,fl1400,pcb1173,rl1304,u1817,pr2392,rl1889,pcb3038"
+$INSTANCES = "dsj1000,pr1002,d1291,fl1400,pcb1173,rl1304,u1817,pr2392,rl1889,pcb3038,pla7397,usa13509"
 
 # Use all, train, val, test, or comma list like "train,val".
 $SPLITS = "all"
