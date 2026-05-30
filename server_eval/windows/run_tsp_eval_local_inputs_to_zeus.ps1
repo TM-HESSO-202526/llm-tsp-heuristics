@@ -41,7 +41,7 @@ $LOCAL_RESULTS_DIR = "D:\Users\antho\TM\server_eval_results"
 #   edge_prior_plus_candidate_list
 #   all
 # ------------------------------
-$SIGNAL_MODE = "distance_only"
+$SIGNAL_MODE = "edge_prior_plus_candidate_list"
 $REPS = 1
 $MAX_HEURISTICS = 1000
 $MAX_INSTANCES = 1000
