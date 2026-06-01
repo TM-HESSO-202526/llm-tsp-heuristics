@@ -30,7 +30,7 @@ The TSP prompt follows the same high-level methodology as the clustering prompt:
 - selection-strategy wording is not embedded in the base prompt;
 - `1+1`, `1,1`, and invalid-parent redesign wording is injected dynamically only when a parent exists;
 - invalid/partial parent code is shown once, in the same prompt section as clustering, and only hidden when `HIDE_INVALID_PARENT_CODE=True` in invalid-redesign mode;
-- `HISTORICAL_FAMILY_AVOIDANCE` optionally injects a fixed historical avoidance block into the prompt.
+- `HISTORICAL_FAMILY_AVOIDANCE` optionally injects a historical avoidance block into the prompt. When `USE_POPMUSIC_EDGE_PRIOR=True`, that block now uses the archived edge-prior runs to explicitly ban the repeated prior-guided candidate expansion / prior-weighted nearest-neighbor / region-path-merging patterns and asks the LLM to use the prior as a structural signal instead of a local scalar edge score.
 
 ## TSP-specific objective block
 
@@ -43,6 +43,12 @@ The TSP-specific block tells the LLM that it receives a `problem` object with:
 - `problem.coords`
 
 When POPMUSIC candidates are active, the prompt tells the LLM that it receives sparse candidate lists through `problem.neighbors(i)`, not a full dense distance matrix. The final tour may still contain non-candidate edges and is evaluated on the true TSPLIB distance. When the edge prior is active, `problem.prior(i, j)` comes from the historical 30-run LKH/POPMUSIC tour-frequency cache, not from the candidate list alone.
+
+## Edge-prior historical-family avoidance
+
+When both `USE_POPMUSIC_EDGE_PRIOR=True` and `HISTORICAL_FAMILY_AVOIDANCE=True`, the prompt includes an additional edge-prior-specific warning derived from the archived runs. The backend still keeps the mechanism static and reproducible; it does not mine the archive at runtime. The injected text says that the dominant repeated family was candidate/prior-guided constructive expansion, that early prior runs often collapsed to prior-guided nearest-neighbor or adaptive prioritized growth, and that historical-avoidance plus candidates mostly reappeared as hierarchical/cluster/region/path construction with prior-guided edge selection.
+
+The prompt therefore forbids another prior-guided candidate expansion, prior-weighted local edge-growth constructor, or repeated region/path-merging method. It instead asks for the prior to change the structure of the construction: for example, using the prior-support graph to define non-greedy macro-ordering, endpoint compatibility constraints, low-degree support skeletons, angular/onion-layer or space-filling macro tours, or diffusion/entropy maps for boundaries rather than next-city choice.
 
 ## Family-focus mode
 

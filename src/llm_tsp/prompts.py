@@ -146,7 +146,15 @@ Return format:
 
 
 def historical_family_avoidance_block(config: dict[str, Any]) -> str:
-    """Static historical family-avoidance block, off by default."""
+    """Static historical family-avoidance block, off by default.
+
+    When POPMUSIC edge-prior mode is active, this block becomes deliberately more
+    specific. The edge-prior archive showed that the LLM repeatedly collapsed to
+    prior/candidate greedy expansion, prior-weighted nearest-neighbor, and
+    region/cluster/path-merging variants that still used the prior as a local
+    edge score. The prompt therefore bans those edge-prior-specific families and
+    asks the model to use the prior as a structural signal instead.
+    """
     search = config.get("search", {})
     if not bool(search.get("historical_family_avoidance", False)):
         return ""
@@ -160,7 +168,7 @@ def historical_family_avoidance_block(config: dict[str, Any]) -> str:
     families = [
         "1. Nearest-neighbor / closest-unvisited constructors\n"
         "   - Do not build a tour by repeatedly going to the nearest or cheapest next city.\n"
-        "   - Do not disguise this as \"adaptive\", \"hybrid\", \"enhanced\", or \"priority\" nearest-neighbor.",
+        "   - Do not disguise this as \"adaptive\", \"hybrid\", \"enhanced\", \"priority\", or \"edge-prior\" nearest-neighbor.",
         "2. Cheapest-insertion / regret-insertion constructors\n"
         "   - Do not construct the tour mainly by inserting one unvisited city into the cheapest position.\n"
         "   - Do not generate another randomized cheapest insertion, regret insertion, farthest insertion, or sampled insertion variant.",
@@ -176,6 +184,18 @@ def historical_family_avoidance_block(config: dict[str, Any]) -> str:
             f"{len(families) + 1}. Prior-as-linear-score variants\n"
             "   - Do not simply score edges as distance - alpha * prior, distance / (1 + prior), or another small weighted mixture.\n"
             "   - If problem.prior(i, j) is used, it must change the structure of the construction, not just the edge score."
+        )
+        families.append(
+            f"{len(families) + 1}. Prior-guided nearest-neighbor / local edge-growth variants\n"
+            "   - The edge-prior archive repeatedly produced tours by extending one current endpoint with the locally best prior/distance edge.\n"
+            "   - Do not build a path, chain, fragment, or cycle by repeatedly selecting the best local prior-supported next edge.\n"
+            "   - This ban also covers \"adaptive prior-guided growth\", \"edge-support expansion\", and \"priority-based neighborhood expansion\" when the decision is still local greedy extension."
+        )
+        families.append(
+            f"{len(families) + 1}. Repeated region/cluster/path-merging with prior-guided edge selection\n"
+            "   - The archive also over-produced hierarchical clustering, regional partitioning, community partitioning, path construction, and fragment merging.\n"
+            "   - Do not create regions/clusters and then connect them using the same prior-weighted nearest edge or endpoint merge rule.\n"
+            "   - Do not rename this as spectral, modular, Voronoi, medoid, centroid, tree decomposition, or community detection unless that structure truly controls the complete tour order."
         )
     families += [
         f"{len(families) + 1}. Standard 2-opt / relocate / LK-like cleanup\n"
@@ -203,16 +223,38 @@ def historical_family_avoidance_block(config: dict[str, Any]) -> str:
     else:
         interface_rules.append("- Use bounded problem.edge_cost(i, j) queries and problem.coords when helpful; avoid dense all-pairs scans.")
 
+    edge_prior_archive_block = ""
+    if use_prior:
+        allowed_ideas = [
+            "Use the prior as a structural signal, not as a scalar next-edge score.",
+            "Examples of acceptable directions: prior-support graph sparsification followed by a genuinely non-greedy macro-order; endpoint compatibility constraints; low-degree support skeletons; angular/onion-layer or space-filling macro tours whose ordering is not chosen by local prior score; diffusion/entropy maps over prior support used to choose region boundaries rather than next cities.",
+            "The generated comments should explicitly name the new mechanism family and explain how the prior changes the structure.",
+        ]
+        if use_candidates:
+            allowed_ideas.append(
+                "Because candidate lists are also active, use them as a bounded access mechanism only; they must not define a simple candidate-prior greedy walk."
+            )
+        edge_prior_archive_block = f"""
+
+Edge-prior-specific historical finding from the archived runs:
+- The dominant repeated family was candidate/prior-guided constructive expansion.
+- Before historical avoidance, this often appeared as prior-guided nearest-neighbor or adaptive prioritized growth.
+- With historical avoidance plus candidates, it mostly reappeared as hierarchical/cluster/region/path construction with prior-guided edge selection.
+- Prior-only historical-avoidance runs were somewhat more diverse, but still repeatedly produced regional growth, community/cluster partitioning, path merging, and nearest-neighbor-like edge-prior growth.
+
+For this edge-prior run, do not merely produce another prior-guided candidate expansion, regional/path-merging constructor, or prior-weighted local edge-growth method.
+{chr(10).join('- ' + x for x in allowed_ideas)}"""
+
     return f"""Historical family avoidance is ACTIVE.
 
 This run is not only trying to improve the best TSP gap. It is explicitly testing whether the LLM can be pushed away from over-produced heuristic families and generate structurally different constructive mechanisms.
 
 From previous TSP runs, the following families were heavily over-generated and must NOT be used again as the main mechanism:
 
-{chr(10).join(families)}
+{chr(10).join(families)}{edge_prior_archive_block}
 
 Your next heuristic must choose a genuinely different construction family. Strict novelty requirement:
-- The main construction mechanism must be different from nearest-neighbor, cheapest/regret insertion, and 2-opt-centered improvement.
+- The main construction mechanism must be different from nearest-neighbor, cheapest/regret insertion, prior-weighted local edge growth, repeated region/path merging, and 2-opt-centered improvement.
 - Do not merely rename an old method.
 - Do not just add extra constants, thresholds, restarts, or a final local search to an old family.
 - In the generated code comments, briefly indicate the intended mechanism family.
@@ -318,6 +360,7 @@ def _redesign_instruction(
     parent_timed_out: bool = False,
     historical_avoidance_active: bool = False,
     family_focus_active: bool = False,
+    edge_prior_avoidance_active: bool = False,
 ) -> str:
     base = (
         "Selection mode: invalid/timeout-aware redesign fallback.\n"
@@ -334,6 +377,11 @@ def _redesign_instruction(
             "\nHistorical family avoidance is active, so validity repair must not collapse back to a banned family. "
             "If the invalid parent uses nearest-neighbor, cheapest/regret insertion, or 2-opt-centered cleanup, treat that code as a failure example rather than as a template."
         )
+    if edge_prior_avoidance_active and not family_focus_active:
+        base += (
+            "\nEdge-prior historical avoidance is active: do not repair by returning to prior-guided candidate expansion, "
+            "prior-weighted nearest-neighbor/local edge growth, or region/path merging controlled by local prior score."
+        )
     if family_focus_active:
         base += (
             "\nFamily-focus mode is active. Repair validity while staying inside the currently locked family. "
@@ -347,8 +395,14 @@ def _selection_instruction(
     parent_is_valid: bool,
     historical_avoidance_active: bool = False,
     family_focus_active: bool = False,
+    edge_prior_avoidance_active: bool = False,
 ) -> str:
     strategy = normalized_selection_strategy(strategy)
+    edge_prior_suffix = (
+        " Edge-prior historical avoidance is also active: avoid prior-guided candidate expansion, prior-weighted local edge growth, and repeated region/path merging as the parent mechanism."
+        if edge_prior_avoidance_active and not family_focus_active
+        else ""
+    )
     if family_focus_active:
         if strategy == "1+1":
             if parent_is_valid:
@@ -390,12 +444,14 @@ def _selection_instruction(
                     "If the parent belongs to a banned historical family, such as nearest-neighbor, cheapest/regret insertion, "
                     "simple greedy construction, or 2-opt-centered cleanup, redesign the main construction mechanism instead of mutating it. "
                     "A lower score is useful, but the primary experimental goal is to test whether a genuinely different family can be generated while staying valid and scalable."
+                    + edge_prior_suffix
                 )
             return (
                 "Selection mode: 1+1 with partial-validity fallback and historical family avoidance.\n"
                 "No fully valid heuristic has been found yet. The selected parent below is only a partial/latest candidate and must not anchor the search. "
                 "Your first priority is to return a valid permutation on all search instances, but do so with a main mechanism that respects the historical family-avoidance constraints. "
                 "Do not repair validity by falling back to nearest-neighbor, cheapest/regret insertion, or 2-opt-centered cleanup."
+                    + edge_prior_suffix
             )
         if parent_is_valid:
             return (
@@ -406,12 +462,14 @@ def _selection_instruction(
                 "simple greedy construction, or 2-opt-centered cleanup, make a genuine family-level change instead of continuing that mechanism. "
                 "Do not merely rename the parent, tune constants, add restarts, or add a small cleanup step to the same family. "
                 "The goal is to continue the chain with a valid, scalable heuristic from a structurally different construction family."
+                    + edge_prior_suffix
             )
         return (
             "Selection mode: 1,1 sequential mutation chain with invalid-parent repair and historical family avoidance.\n"
             "The selected parent below is the most recent heuristic in the chain and it may be invalid or only partially valid. "
             "Use the feedback to understand the failure, but do not preserve a banned or over-produced family while repairing it. "
             "Your first priority is validity; your second priority is to keep the main mechanism structurally different from nearest-neighbor, cheapest/regret insertion, and 2-opt-centered cleanup."
+                + edge_prior_suffix
         )
 
     if strategy == "1+1":
@@ -465,6 +523,9 @@ def build_tsp_prompt(
     family_focus_memory = family_focus_memory or ""
     historical_avoidance_active = bool(historical_memory.strip())
     family_focus_active = bool(family_focus_memory.strip())
+    edge_prior_avoidance_active = historical_avoidance_active and bool(
+        config.get("popmusic", {}).get("use_popmusic_edge_prior", False)
+    )
 
     if prompt_mode == "initial" or not parent_summary:
         return f"""
@@ -484,6 +545,7 @@ Generate the first heuristic for this active objective now.
             parent_timed_out=parent_timed_out,
             historical_avoidance_active=historical_avoidance_active,
             family_focus_active=family_focus_active,
+            edge_prior_avoidance_active=edge_prior_avoidance_active,
         )
         code_block = ""
         if parent_code:
@@ -522,6 +584,7 @@ Return the answer in the required # Name / # Code format.
         parent_is_valid=parent_is_valid,
         historical_avoidance_active=historical_avoidance_active,
         family_focus_active=family_focus_active,
+        edge_prior_avoidance_active=edge_prior_avoidance_active,
     )
     history = history_text or "No previous attempts."
     code_block = ""

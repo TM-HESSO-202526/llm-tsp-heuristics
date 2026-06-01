@@ -180,20 +180,11 @@ def load_problem_for_spec(cfg: dict, spec: InstanceSpec, artifact_dir: Path) -> 
     if use_candidates or use_prior:
         cand_path = select_existing_path(candidate_paths_for_instance(spec.name, candidate_root, params))
         if cand_path is None:
-            # Historical behavior: if the POPMUSIC cache is absent, build the official
-            # LKH CANDIDATE_FILE immediately and store it under the historical cache name.
-            cand_path = popmusic_candidate_file_name(spec.name, candidate_root, params)
-            print(f"[candidate cache] miss for {spec.name}; generating official LKH/POPMUSIC candidate file.")
-            print(f"[candidate cache] tsp_file={tsp_path}")
-            print(f"[candidate cache] candidate_file={cand_path}")
-            cand_path = run_popmusic_candidate_generation(
-                tsp_path,
-                cand_path,
-                lkh_binary,
-                params=params,
-                timeout_s=float(lkh_cfg.get("generation_timeout_s", 900)),
+            raise FileNotFoundError(
+                f"Missing POPMUSIC candidate file for {spec.name} under {candidate_root}. "
+                "The LLM loop no longer generates candidate caches automatically; "
+                "build/copy the file separately before launching."
             )
-            print(f"[candidate cache] wrote {cand_path}")
         else:
             print(f"[candidate cache] hit for {spec.name}: {cand_path}")
 
@@ -209,22 +200,11 @@ def load_problem_for_spec(cfg: dict, spec: InstanceSpec, artifact_dir: Path) -> 
         edge_prior_root = Path(suite.get("edge_prior_cache_dir", pop.get("edge_prior_cache_dir", "/content/drive/MyDrive/TM/LKH_edge_prior_cache")))
         prior_path = popmusic_edge_prior_file_name(spec.name, edge_prior_root, prior_params)
         if prior_params.force_rebuild or (not prior_path.exists()):
-            print(f"[edge prior cache] miss for {spec.name}; generating LKH/POPMUSIC tour-frequency prior.")
-            print(
-                f"[edge prior cache] runs={prior_params.runs} time_limit={prior_params.time_limit_s}s "
-                f"topk={prior_params.topk} output={prior_path}"
+            raise FileNotFoundError(
+                f"Missing edge-prior cache file for {spec.name}: {prior_path}. "
+                "The LLM loop no longer generates edge-prior caches automatically; "
+                "build/copy the file separately before launching."
             )
-            prior_path = run_popmusic_edge_prior_generation(
-                tsp_path,
-                prior_path,
-                lkh_binary,
-                n=n,
-                base_seed=int(runtime.get("global_seed", 0)),
-                popmusic=params,
-                prior_params=prior_params,
-                timeout_s=float(edge_prior_cfg.get("generation_timeout_s", max(1800.0, prior_params.runs * 60.0))),
-            )
-            print(f"[edge prior cache] wrote {prior_path}")
         else:
             print(f"[edge prior cache] hit for {spec.name}: {prior_path}")
         raw_prior, edge_prior_meta = load_prior_npz(prior_path)
@@ -416,7 +396,7 @@ def main() -> None:
         missing_candidates = selected_df[selected_df["candidate_file_found"].astype(str) == ""]
         print(f"POPMUSIC candidate lists are exposed. Candidate files missing for {len(missing_candidates)}/{len(selected_df)} selected instance(s).")
         if len(missing_candidates):
-            print("Missing candidate files will be generated immediately with LKH/POPMUSIC during problem loading.")
+            print("Missing candidate files will NOT be generated in the LLM loop. Build/copy them separately before launching.")
 
 
     status = {

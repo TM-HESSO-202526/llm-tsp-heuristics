@@ -202,3 +202,38 @@ def test_strict_constructive_only_overrides_avoidance_cleanup_language():
     avoidance = historical_family_avoidance_block(cfg)
     assert "Strict constructive-only mode is active" in avoidance
     assert "Bounded cleanup is allowed" not in avoidance
+
+
+def test_edge_prior_avoidance_injects_archive_specific_bans():
+    cfg = _cfg(use_candidates=False, use_prior=True, avoid=True)
+    avoidance = historical_family_avoidance_block(cfg)
+    assert "Edge-prior-specific historical finding from the archived runs" in avoidance
+    assert "candidate/prior-guided constructive expansion" in avoidance
+    assert "Prior-guided nearest-neighbor / local edge-growth variants" in avoidance
+    assert "Repeated region/cluster/path-merging with prior-guided edge selection" in avoidance
+    assert "Use the prior as a structural signal, not as a scalar next-edge score" in avoidance
+    assert "problem.prior" in avoidance
+    assert "problem.neighbors" not in avoidance
+
+
+def test_edge_prior_and_candidate_avoidance_warns_candidate_lists_are_bounded_access_only():
+    cfg = _cfg(use_candidates=True, use_prior=True, avoid=True)
+    avoidance = historical_family_avoidance_block(cfg)
+    assert "candidate-prior greedy walk" in avoidance
+    assert "Use problem.neighbors(i) and problem.prior(i, j)" in avoidance
+
+
+def test_edge_prior_avoidance_selection_instruction_mentions_edge_prior_family_escape():
+    cfg = _cfg(use_candidates=True, use_prior=True, avoid=True)
+    prompt = build_tsp_prompt(
+        cfg,
+        parent_code="class TSPHeuristic:\n    pass",
+        history_text="attempt history",
+        prompt_mode="mutate_parent",
+        parent_is_invalid=False,
+        parent_summary={"attempt": 1, "mean_gap_ref_pct": 12.0},
+        historical_memory=historical_family_avoidance_block(cfg),
+    )
+    assert "Edge-prior historical avoidance is also active" in prompt
+    assert "prior-guided candidate expansion" in prompt
+    assert "repeated region/path merging" in prompt
