@@ -73,6 +73,7 @@ REDESIGN_ON_TIMEOUT_PARENT = True
 HIDE_INVALID_PARENT_CODE = False
 
 HISTORICAL_FAMILY_AVOIDANCE = False
+STRICT_CONSTRUCTIVE_ONLY = False
 ```
 
 There is intentionally no separate experiment-mode variable anymore. This repo always runs the TSP LLaMEA loop; dense mode, candidate mode, and POPMUSIC-prior mode are controlled by the POPMUSIC flags.
@@ -139,3 +140,7 @@ The main notebook is `notebooks/00_tsp_colab_launcher.ipynb`. It follows the sam
 ### Family-focus mode
 
 The Colab launcher now includes an optional `FAMILY_FOCUS_MODE`. This mode is intended for follow-up runs after historical family avoidance reveals several alternative families. Instead of mixing all families in one prompt, the backend runs one local block per family, with its own parent and history, then writes `family_focus_summary.csv` to compare the best candidate from each family. The editable family descriptions live in the launcher variable `FAMILY_FOCUS_PLAN`.
+
+### Strict constructive-only mode
+
+Set `STRICT_CONSTRUCTIVE_ONLY = True` in the Colab launcher, or `search.strict_constructive_only: true` in YAML, to force the prompt to ask for pure constructive TSP heuristics. In this mode the LLM is explicitly forbidden from adding 2-opt, 3-opt, local search, segment-reversal cleanup, relocate/swap moves, or any post-construction optimization/refinement phase.

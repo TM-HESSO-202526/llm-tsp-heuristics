@@ -59,6 +59,7 @@ class RuntimeConfig:
     redesign_on_timeout_parent: bool = True
     hide_invalid_parent_code: bool = False
     historical_family_avoidance: bool = False
+    strict_constructive_only: bool = False
     family_focus_mode: bool = False
     family_focus_calls_per_family: int = 20
 
@@ -109,6 +110,7 @@ def flatten_runtime_config(cfg: dict[str, Any]) -> RuntimeConfig:
         redesign_on_timeout_parent=bool(search.get("redesign_on_timeout_parent", True)),
         hide_invalid_parent_code=bool(search.get("hide_invalid_parent_code", False)),
         historical_family_avoidance=bool(search.get("historical_family_avoidance", False)),
+        strict_constructive_only=bool(search.get("strict_constructive_only", False)),
         family_focus_mode=bool(search.get("family_focus_mode", False)),
         family_focus_calls_per_family=int(search.get("family_focus_calls_per_family", 20)),
         use_popmusic_candidates=bool(pop.get("use_popmusic_candidates", False)),

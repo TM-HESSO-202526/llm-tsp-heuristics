@@ -1,14 +1,14 @@
 from llm_tsp.prompts import base_task_prompt, build_tsp_prompt, historical_family_avoidance_block
 
 
-def _cfg(use_candidates=False, use_prior=False, avoid=True):
+def _cfg(use_candidates=False, use_prior=False, avoid=True, strict=False):
     return {
         "popmusic": {
             "use_popmusic_candidates": use_candidates,
             "use_popmusic_edge_prior": use_prior,
             "prior_mode": "frequency",
         },
-        "search": {"historical_family_avoidance": avoid, "selection_strategy": "1+1"},
+        "search": {"historical_family_avoidance": avoid, "selection_strategy": "1+1", "strict_constructive_only": strict},
     }
 
 
@@ -185,3 +185,20 @@ def test_family_focus_selection_instruction_preserves_locked_family():
     assert "within this same focus family only" in prompt
     assert "preserving the locked family as the main mechanism" in prompt
     assert "Make a genuine family-level change" not in prompt
+
+
+def test_strict_constructive_only_prompt_forbids_local_search():
+    cfg = _cfg(use_candidates=True, use_prior=True, avoid=False, strict=True)
+    prompt = build_tsp_prompt(cfg, prompt_mode="initial")
+    assert "STRICT CONSTRUCTIVE-ONLY MODE IS ACTIVE" in prompt
+    assert "no 2-opt" in prompt
+    assert "3-opt" in prompt
+    assert "no local search" in prompt
+    assert "return it without any optimization phase" in prompt
+
+
+def test_strict_constructive_only_overrides_avoidance_cleanup_language():
+    cfg = _cfg(use_candidates=False, use_prior=False, avoid=True, strict=True)
+    avoidance = historical_family_avoidance_block(cfg)
+    assert "Strict constructive-only mode is active" in avoidance
+    assert "Bounded cleanup is allowed" not in avoidance

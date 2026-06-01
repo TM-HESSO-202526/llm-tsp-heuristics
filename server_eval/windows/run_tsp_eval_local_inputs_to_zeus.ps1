@@ -45,7 +45,7 @@ $SIGNAL_MODE = "distance_only"
 $REPS = 10
 $MAX_HEURISTICS = 1000
 $MAX_INSTANCES = 1000
-$TIMEOUT_S = 600
+$TIMEOUT_S = 6000
 
 # Use ALL for all instances present in the local/server input folder.
 # Safer explicit 10-instance list:

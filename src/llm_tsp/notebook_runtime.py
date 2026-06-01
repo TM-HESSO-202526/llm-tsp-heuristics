@@ -38,6 +38,10 @@ DEFAULTS: dict[str, Any] = {
     # Historical family avoidance is off by default.
     "HISTORICAL_FAMILY_AVOIDANCE": False,
 
+    # Strict constructive-only prompting. When True, the prompt forbids
+    # post-construction optimization phases such as 2-opt, 3-opt, and local search.
+    "STRICT_CONSTRUCTIVE_ONLY": False,
+
     # Family-focus/island exploitation mode.
     # The launcher notebook should provide the actual FAMILY_FOCUS_PLAN text.
     "FAMILY_FOCUS_MODE": False,
@@ -138,6 +142,7 @@ def build_runtime_config_from_notebook_globals(globals_dict: dict[str, Any]) -> 
             "redesign_on_timeout_parent": _as_bool(values["REDESIGN_ON_TIMEOUT_PARENT"]),
             "hide_invalid_parent_code": _as_bool(values["HIDE_INVALID_PARENT_CODE"]),
             "historical_family_avoidance": _as_bool(values["HISTORICAL_FAMILY_AVOIDANCE"]),
+            "strict_constructive_only": _as_bool(values["STRICT_CONSTRUCTIVE_ONLY"]),
             "family_focus_mode": family_focus_mode,
             "family_focus_calls_per_family": family_focus_calls_per_family,
             "family_focus_plan": family_focus_plan,
@@ -212,6 +217,7 @@ def print_effective_config(effective: dict[str, Any]) -> None:
         f"timeout: {search.get('redesign_on_timeout_parent')} | expose-invalid-code: {not search.get('hide_invalid_parent_code', False)}"
     )
     print(f"historical_family_avoidance: {search.get('historical_family_avoidance')}")
+    print(f"strict_constructive_only: {search.get('strict_constructive_only', False)}")
     print(f"family_focus_mode: {search.get('family_focus_mode', False)}")
     if search.get('family_focus_mode', False):
         plan = search.get('family_focus_plan') or []

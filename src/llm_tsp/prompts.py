@@ -63,9 +63,31 @@ def objective_prompt_block(config: dict[str, Any]) -> str:
     return "\n".join(lines).strip()
 
 
+def strict_constructive_only_block(config: dict[str, Any]) -> str:
+    """Prompt block that enforces pure construction when requested."""
+    search = config.get("search", {})
+    if not bool(search.get("strict_constructive_only", False)):
+        return ""
+    return """STRICT CONSTRUCTIVE-ONLY MODE IS ACTIVE.
+
+The generated heuristic must be a pure constructive TSP heuristic.
+It must build one valid Hamiltonian tour and return it directly.
+All decisions must be part of the construction process itself.
+
+Strictly forbidden:
+- no 2-opt, two-opt, 3-opt, k-opt, Lin-Kernighan, LK, or LKH-style improvement;
+- no local search, neighborhood search, edge-exchange, segment-reversal improvement, relocate, swap, Or-opt, or variable-depth exchange;
+- no post-construction cleanup, refinement, repair-by-optimization, improve_tour, optimize_tour, polish, or final improvement pass after a complete tour has been built;
+- no loop that repeatedly scans a completed tour looking for improving moves.
+
+You may maintain feasibility during construction, for example by tracking visited cities, preventing duplicates, and choosing a different next city when a candidate would break the permutation. But once the tour has been constructed, return it without any optimization phase.
+This strict constructive-only block overrides any parent, history, family-focus, or novelty instruction that suggests adding a cleanup or local-search phase."""
+
+
 def base_task_prompt(config: dict[str, Any]) -> str:
     """Base task prompt with no search-strategy wording, mirroring clustering."""
     objective_block = objective_prompt_block(config)
+    strict_block = strict_constructive_only_block(config)
     return f"""
 Your task is to design a novel heuristic algorithm for the following TSP optimization problem.
 
@@ -92,6 +114,8 @@ Output:
 - Each city must appear exactly once.
 - Do not append the first city at the end; the evaluator closes the tour itself.
 - The algorithm must be self-contained and executable with numpy/math available.
+
+{strict_block}
 
 Rules:
 - You may use numpy as np, math, lists, dictionaries, sets, and bounded loops.
@@ -131,6 +155,8 @@ def historical_family_avoidance_block(config: dict[str, Any]) -> str:
     use_candidates = bool(pop.get("use_popmusic_candidates"))
     use_prior = bool(pop.get("use_popmusic_edge_prior"))
 
+    strict_constructive = bool(search.get("strict_constructive_only", False))
+
     families = [
         "1. Nearest-neighbor / closest-unvisited constructors\n"
         "   - Do not build a tour by repeatedly going to the nearest or cheapest next city.\n"
@@ -152,9 +178,9 @@ def historical_family_avoidance_block(config: dict[str, Any]) -> str:
             "   - If problem.prior(i, j) is used, it must change the structure of the construction, not just the edge score."
         )
     families += [
-        f"{len(families) + 1}. Standard 2-opt / relocate / LK-like cleanup as the main idea\n"
-        "   - Do not produce a base tour and then rely mainly on 2-opt, segment reversal, relocate, swap, or variable-depth exchange.\n"
-        "   - Bounded cleanup is allowed only as a small final repair step, not as the core heuristic.",
+        f"{len(families) + 1}. Standard 2-opt / relocate / LK-like cleanup\n"
+        "   - Do not produce a base tour and then rely on 2-opt, segment reversal, relocate, swap, or variable-depth exchange.\n"
+        + ("   - Strict constructive-only mode is active: no bounded cleanup or final repair-by-optimization is allowed." if strict_constructive else "   - Bounded cleanup is allowed only as a small final repair step, not as the core heuristic."),
         f"{len(families) + 2}. Random restarts / multi-start wrappers\n"
         "   - Do not create diversity only by trying many random starts of the same known constructor.\n"
         "   - Randomness is allowed only if the deterministic mechanism is structurally new.",
