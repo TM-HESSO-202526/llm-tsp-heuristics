@@ -130,10 +130,18 @@ rm -rf "$TMP"
     $remoteExtract = $remoteExtract.Replace("__REMOTE_INPUT_DIR__", $REMOTE_INPUT_DIR)
     $remoteExtract = $remoteExtract.Replace("__REMOTE_CANDIDATE_CACHE_DIR__", $REMOTE_CANDIDATE_CACHE_DIR)
     $remoteExtract = $remoteExtract.Replace("__REMOTE_EDGE_PRIOR_CACHE_DIR__", $REMOTE_EDGE_PRIOR_CACHE_DIR)
+    # Send through a real remote file and normalize line endings.
+    # Piping Get-Content directly to ssh can leave Windows CRLF characters,
+    # which makes bash read "pipefail\r" and fail with "invalid option name".
+    $remoteExtract = $remoteExtract -replace "`r`n", "`n"
+    $remoteExtract = $remoteExtract -replace "`r", ""
     $tmpExtract = New-TemporaryFile
-    Set-Content -Path $tmpExtract -Value $remoteExtract -NoNewline -Encoding UTF8
-    Get-Content $tmpExtract | ssh $REMOTE "bash -s"
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($tmpExtract.FullName, $remoteExtract, $utf8NoBom)
+    scp $tmpExtract "${REMOTE}:/home/$AAI_USERNAME/extract_tethys_usa13509.sh"
     Remove-Item $tmpExtract
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    ssh $REMOTE "sed -i 's/\r$//' /home/$AAI_USERNAME/extract_tethys_usa13509.sh; bash /home/$AAI_USERNAME/extract_tethys_usa13509.sh"
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
@@ -206,6 +214,7 @@ run_cache() {
   echo "================================================================================================" | tee -a "$LOG"
   date | tee -a "$LOG"
 
+  set +e
   python -u server_eval/build_large_tsp_caches.py \
     --instances "$instance" \
     --instance-root "$REMOTE_INSTANCE_DIR" \
@@ -224,6 +233,13 @@ run_cache() {
     $FORCE_CANDIDATE_FLAG \
     $FORCE_PRIOR_FLAG \
     2>&1 | tee -a "$LOG"
+  local rc=${PIPESTATUS[0]}
+  set -e
+
+  if [ "$rc" -ne 0 ]; then
+    echo "FAILED $instance with exit code $rc; stopping chain." | tee -a "$LOG"
+    exit "$rc"
+  fi
 
   echo "DONE $instance" | tee -a "$LOG"
   date | tee -a "$LOG"
@@ -268,11 +284,15 @@ $remoteCommands = $remoteCommands.Replace("__LARGE_SUBPROCESS_TIMEOUT_S__", [str
 $remoteCommands = $remoteCommands.Replace("__FORCE_CANDIDATE_FLAG__", $forceCandFlag)
 $remoteCommands = $remoteCommands.Replace("__FORCE_PRIOR_FLAG__", $forcePriorFlag)
 $remoteCommands = $remoteCommands -replace "`r`n", "`n"
+$remoteCommands = $remoteCommands -replace "`r", ""
 
 $tmp = New-TemporaryFile
-Set-Content -Path $tmp -Value $remoteCommands -NoNewline -Encoding UTF8
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText($tmp.FullName, $remoteCommands, $utf8NoBom)
 scp $tmp "${REMOTE}:/home/$AAI_USERNAME/build_large_tsp_caches_job.sh"
 Remove-Item $tmp
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+ssh $REMOTE "sed -i 's/\r$//' /home/$AAI_USERNAME/build_large_tsp_caches_job.sh"
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Host "=== Starting detached tmux session: $TMUX_SESSION ==="
