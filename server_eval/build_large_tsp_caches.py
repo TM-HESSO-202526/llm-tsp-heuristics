@@ -225,6 +225,232 @@ def build_cached_candidate_tour_frequency_prior(
     return prior_file
 
 
+def _valid_lkh_tour(path: Path, n: int) -> bool:
+    tour = parse_lkh_tour_file(path)
+    return len(tour) == int(n) and len(set(tour)) == int(n) and (not tour or (min(tour) == 0 and max(tour) == int(n) - 1))
+
+
+def _aggregate_tours_to_prior_npz(
+    *,
+    work_dir: Path,
+    prior_file: Path,
+    n: int,
+    runs: int,
+    topk: int,
+    base_seed: int,
+) -> Path:
+    """Aggregate existing run_XXX.tour files into the sparse edge-prior .npz schema."""
+    counts: dict[tuple[int, int], float] = defaultdict(float)
+    rows: list[dict[str, object]] = []
+    success_runs = 0
+
+    for r in range(1, int(runs) + 1):
+        tour_file = work_dir / f"run_{r:03d}.tour"
+        tour = parse_lkh_tour_file(tour_file)
+        ok = len(tour) == int(n) and len(set(tour)) == int(n) and (not tour or (min(tour) == 0 and max(tour) == int(n) - 1))
+        rows.append({
+            "run": r,
+            "seed": int(base_seed) + r - 1,
+            "returncode": 0 if ok else -1,
+            "tour_len": len(tour),
+            "success": bool(ok),
+        })
+        print(f"aggregate run_{r:03d}: len={len(tour)} ok={ok}", flush=True)
+        if not ok:
+            raise RuntimeError(f"Missing or invalid tour before aggregation: {tour_file}")
+
+        success_runs += 1
+        for k, a in enumerate(tour):
+            b = tour[(k + 1) % int(n)]
+            if a == b:
+                continue
+            edge = tuple(sorted((int(a), int(b))))
+            counts[edge] += 1.0
+
+    raw = {edge: float(val) / float(success_runs) for edge, val in counts.items()}
+
+    incident: list[list[tuple[float, tuple[int, int]]]] = [[] for _ in range(int(n))]
+    for edge, weight in raw.items():
+        a, b = edge
+        incident[a].append((weight, edge))
+        incident[b].append((weight, edge))
+
+    keep: set[tuple[int, int]] = set()
+    for i in range(int(n)):
+        incident[i].sort(key=lambda x: x[0], reverse=True)
+        for _, edge in incident[i][: int(topk)]:
+            keep.add(edge)
+    prior = {edge: raw[edge] for edge in keep}
+
+    save_prior_npz(prior_file, prior, success_runs=success_runs, attempted_runs=int(runs), topk=int(topk))
+
+    with (work_dir / "edge_prior_runs.csv").open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["run", "seed", "returncode", "tour_len", "success"])
+        writer.writeheader()
+        writer.writerows(rows)
+
+    print(
+        f"WROTE parallel edge prior: {prior_file} success_runs={success_runs}/{runs} edges={len(prior)}",
+        flush=True,
+    )
+    return prior_file
+
+
+def _parse_core_list(core_list: str | None, parallel: int) -> list[int] | None:
+    if not core_list:
+        return None
+    cores = [int(x.strip()) for x in str(core_list).split(",") if x.strip()]
+    if not cores:
+        return None
+    return cores[: max(1, int(parallel))]
+
+
+def build_parallel_tour_frequency_prior(
+    *,
+    tsp_file: Path,
+    prior_file: Path,
+    lkh_binary: Path,
+    n: int,
+    base_seed: int,
+    runs: int,
+    topk: int,
+    parallel_runs: int,
+    core_list: str | None,
+    method: str,
+    popmusic: PopmusicParams,
+    prior_params: EdgePriorParams,
+    candidate_file: Path | None = None,
+    max_candidates: int = 20,
+    subprocess_timeout_s: float = 86400.0,
+) -> Path:
+    """Build or resume edge-prior tours in parallel, then aggregate them into the final .npz.
+
+    This is intended for very large instances.  It preserves the historical work directory for
+    historical_popmusic, so already-generated tours such as usa13509 run_001..run_013 are reused.
+    """
+    prior_file.parent.mkdir(parents=True, exist_ok=True)
+    binary = ensure_lkh_binary(lkh_binary, build_if_missing=True, timeout_s=900.0)
+
+    if method == "historical_popmusic":
+        work_dir = prior_file.parent / (prior_file.stem + "_work")
+    elif method == "cached_candidate_lkh":
+        if candidate_file is None or not candidate_file.exists() or candidate_file.stat().st_size <= 0:
+            raise FileNotFoundError(f"cached_candidate_lkh needs an existing candidate file: {candidate_file}")
+        work_dir = prior_file.parent / (prior_file.stem + "_cached_candidate_work")
+    else:
+        raise ValueError(f"Unsupported parallel prior method: {method}")
+
+    log_dir = work_dir / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    missing: list[int] = []
+    print("=== DETECT EXISTING PRIOR TOURS ===", flush=True)
+    for r in range(1, int(runs) + 1):
+        tour = work_dir / f"run_{r:03d}.tour"
+        if _valid_lkh_tour(tour, int(n)):
+            print(f"run_{r:03d} OK existing", flush=True)
+        else:
+            print(f"run_{r:03d} missing/invalid -> will run", flush=True)
+            missing.append(r)
+
+    print(f"Missing/invalid prior runs: {len(missing)}/{runs}", flush=True)
+    cores = _parse_core_list(core_list, int(parallel_runs))
+    max_parallel = max(1, int(parallel_runs))
+    active: list[tuple[int, subprocess.Popen, Path, float]] = []
+    failures: list[int] = []
+
+    def write_par_for_run(r: int) -> Path:
+        seed = int(base_seed) + r - 1
+        par_file = work_dir / f"run_{r:03d}.par"
+        tour_file = work_dir / f"run_{r:03d}.tour"
+        if method == "historical_popmusic":
+            write_edge_prior_lkh_parameter_file(
+                tsp_file,
+                par_file,
+                tour_file,
+                seed=seed,
+                popmusic=popmusic,
+                prior=prior_params,
+            )
+        else:
+            write_cached_candidate_prior_par_file(
+                tsp_file,
+                candidate_file,  # type: ignore[arg-type]
+                par_file,
+                tour_file,
+                seed=seed,
+                max_candidates=max_candidates,
+                move_type=prior_params.move_type,
+                patching_a=prior_params.patching_a,
+                patching_c=prior_params.patching_c,
+                time_limit_s=prior_params.time_limit_s,
+            )
+        return par_file
+
+    def launch(r: int) -> None:
+        par = write_par_for_run(r)
+        log = log_dir / f"run_{r:03d}.parallel.log"
+        core = None
+        if cores:
+            core = cores[(r - 1) % len(cores)]
+        cmd = [str(binary), str(par)]
+        if core is not None:
+            cmd = ["taskset", "-c", str(core)] + cmd
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] START run_{r:03d} core={core} cmd={' '.join(cmd)}", flush=True)
+        fh = log.open("w", encoding="utf-8")
+        proc = subprocess.Popen(cmd, stdout=fh, stderr=subprocess.STDOUT, text=True)
+        # Keep file handle attached to proc object so it is not garbage collected too early.
+        proc._llm_tsp_log_fh = fh  # type: ignore[attr-defined]
+        active.append((r, proc, log, time.perf_counter()))
+
+    def reap_one(block: bool) -> None:
+        while True:
+            for i, (r, proc, log, t0) in enumerate(list(active)):
+                code = proc.poll()
+                if code is None:
+                    # Optional hard outer timeout to avoid hidden infinite jobs.
+                    if subprocess_timeout_s and (time.perf_counter() - t0) > float(subprocess_timeout_s):
+                        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] TIMEOUT run_{r:03d}; killing", flush=True)
+                        proc.kill()
+                        code = proc.wait()
+                    else:
+                        continue
+                try:
+                    proc._llm_tsp_log_fh.close()  # type: ignore[attr-defined]
+                except Exception:
+                    pass
+                active.pop(i)
+                ok = code == 0 and _valid_lkh_tour(work_dir / f"run_{r:03d}.tour", int(n))
+                elapsed = time.perf_counter() - t0
+                print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] DONE run_{r:03d} return={code} ok={ok} time={elapsed:.1f}s log={log}", flush=True)
+                if not ok:
+                    failures.append(r)
+                return
+            if not block:
+                return
+            time.sleep(2.0)
+
+    for r in missing:
+        while len(active) >= max_parallel:
+            reap_one(block=True)
+        launch(r)
+
+    while active:
+        reap_one(block=True)
+
+    if failures:
+        raise RuntimeError(f"Some LKH prior runs failed validation: {failures}. Check {log_dir}")
+
+    return _aggregate_tours_to_prior_npz(
+        work_dir=work_dir,
+        prior_file=prior_file,
+        n=int(n),
+        runs=int(runs),
+        topk=int(topk),
+        base_seed=int(base_seed),
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build large TSP candidate and edge-prior caches.")
     parser.add_argument("--instances", default="pla7397,usa13509", help="Comma-separated instance names.")
@@ -264,6 +490,17 @@ def main() -> None:
         "--fallback-cached-candidate",
         action="store_true",
         help="If historical_popmusic fails, retry with cached_candidate_lkh.",
+    )
+    parser.add_argument(
+        "--parallel-prior-runs",
+        type=int,
+        default=1,
+        help="Run missing LKH edge-prior tours in parallel. Use 10 on zeus when cores are available.",
+    )
+    parser.add_argument(
+        "--core-list",
+        default="",
+        help="Optional comma-separated CPU core list used with taskset for parallel prior runs, e.g. 0,1,2,3,4,5,6,7,8,9.",
     )
     args = parser.parse_args()
 
@@ -335,7 +572,25 @@ def main() -> None:
         )
         t0 = time.perf_counter()
         try:
-            if args.prior_method == "historical_popmusic":
+            if args.parallel_prior_runs and int(args.parallel_prior_runs) > 1:
+                build_parallel_tour_frequency_prior(
+                    tsp_file=tsp_file,
+                    prior_file=prior_file,
+                    lkh_binary=lkh_binary,
+                    n=n,
+                    base_seed=args.base_seed,
+                    runs=args.runs,
+                    topk=args.topk,
+                    parallel_runs=args.parallel_prior_runs,
+                    core_list=args.core_list,
+                    method=args.prior_method,
+                    popmusic=pop,
+                    prior_params=prior_params,
+                    candidate_file=candidate_file,
+                    max_candidates=args.max_candidates,
+                    subprocess_timeout_s=args.subprocess_timeout_s,
+                )
+            elif args.prior_method == "historical_popmusic":
                 run_popmusic_edge_prior_generation(
                     tsp_file,
                     prior_file,
