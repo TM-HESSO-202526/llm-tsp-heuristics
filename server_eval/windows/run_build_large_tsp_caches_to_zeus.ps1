@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # Build large TSP LKH/POPMUSIC candidate and edge-prior caches on IICT server
 #
 # Current protocol:
@@ -30,7 +30,7 @@ $INSTANCES = @("usa13509", "pla33810", "pla85900")
 $RUNS = 30
 $TOPK = 5
 $BASE_SEED = 12345
-$CANDIDATE_TIMEOUT_S = 14400
+$CANDIDATE_TIMEOUT_S = 86400
 
 # Parallelization for edge-prior tour runs.
 # Use 10 cores, avoiding low core IDs often used by clustering jobs.
@@ -45,8 +45,8 @@ $USA_SUBPROCESS_TIMEOUT_S = 90000
 # For pla33810 and pla85900, build the .cand first, then build tour-frequency prior using that candidate file.
 # This avoids rebuilding POPMUSIC candidates inside every short prior run.
 $LARGE_PRIOR_METHOD = "cached_candidate_lkh"
-$LARGE_TIME_LIMIT_S = 600
-$LARGE_SUBPROCESS_TIMEOUT_S = 1200
+$LARGE_TIME_LIMIT_S = 21600
+$LARGE_SUBPROCESS_TIMEOUT_S = 25200
 
 # Usually leave these at 0. The script resumes missing work and skips complete files.
 $FORCE_CANDIDATE = "0"

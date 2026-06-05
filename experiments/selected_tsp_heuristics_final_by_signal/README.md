@@ -4,7 +4,7 @@ This folder collects the final selected TSP heuristics to re-evaluate in one uni
 
 The selections are grouped by the signal available to the generated heuristic:
 
-- `distance_only/`: no POPMUSIC candidate list and no edge-frequency prior exposed. Includes normal raw generation, historical family avoidance, family-focus variants, and one legacy LLaMEA comparison.
+- `distance_only/`: no POPMUSIC candidate list and no edge-frequency prior exposed. Includes normal raw generation, historical family avoidance, family-focus variants, a pure constructive convex-hull outside-in control, and one legacy LLaMEA comparison.
 - `candidate_list/`: POPMUSIC candidate list exposed, no edge prior.
 - `edge_prior/`: edge-frequency / prior signal exposed, no candidate-list interface.
 - `edge_prior_plus_candidate_list/`: both POPMUSIC candidates and edge prior exposed.
