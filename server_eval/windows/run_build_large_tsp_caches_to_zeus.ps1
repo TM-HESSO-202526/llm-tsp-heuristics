@@ -35,7 +35,7 @@ $CANDIDATE_TIMEOUT_S = 86400
 # Parallelization for edge-prior tour runs.
 # Use 10 cores, avoiding low core IDs often used by clustering jobs.
 $PARALLEL_PRIOR_RUNS = 10
-$CORE_LIST = "20,21,22,23,24,25,26,27,28,29"
+$CORE_LIST = "17"
 
 # usa13509 already has partial historical POPMUSIC work/tours. Keep historical mode to reuse them.
 $USA_PRIOR_METHOD = "historical_popmusic"
