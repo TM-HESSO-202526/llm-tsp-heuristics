@@ -1,0 +1,1 @@
+PCA projection sweep; O(n log n) spatial baseline.

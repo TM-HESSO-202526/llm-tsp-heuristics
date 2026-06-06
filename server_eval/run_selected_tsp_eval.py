@@ -29,7 +29,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from llm_tsp.candidate_sets import normalize_candidates, parse_simple_candidate_file
-from llm_tsp.distance import tour_cost_from_matrix, tsplib_distance_matrix, validate_tour
+from llm_tsp.distance import tour_cost_from_matrix, make_tsplib_distance, validate_tour
 from llm_tsp.lkh_popmusic import (
     EdgePriorParams,
     PopmusicParams,
@@ -163,7 +163,7 @@ class TSPInstance:
     optimum: float
     tsp_path: Path
     coords: np.ndarray
-    dist: np.ndarray
+    dist: Any
     edge_weight_type: str
 
 
@@ -182,6 +182,7 @@ def load_instances(
     instances_filter: str,
     split_filter: str,
     max_instances: int,
+    dense_distance_threshold: int,
 ) -> list[TSPInstance]:
     opt = load_optima(optima_csv)
     wanted_instances = parse_csv_filter(instances_filter, cast=str)
@@ -202,17 +203,18 @@ def load_instances(
                 + ", ".join(str(p) for p in tsp_paths_for_instance(name, instance_root))
             )
         coords, meta = read_tsplib_coords(tsp_path)
-        dist = tsplib_distance_matrix(coords, meta.get("EDGE_WEIGHT_TYPE"))
+        edge_weight_type = str(meta.get("EDGE_WEIGHT_TYPE", ""))
+        dist = make_tsplib_distance(coords, edge_weight_type, dense_threshold=dense_distance_threshold)
         rows.append(
             TSPInstance(
                 name=name,
                 split=str(r.get("split", "all")),
-                n=int(dist.shape[0]),
+                n=int(coords.shape[0]),
                 optimum=float(r["optimum"]),
                 tsp_path=tsp_path,
                 coords=coords,
                 dist=dist,
-                edge_weight_type=str(meta.get("EDGE_WEIGHT_TYPE", "")),
+                edge_weight_type=edge_weight_type,
             )
         )
 
@@ -224,9 +226,17 @@ def load_instances(
     return rows
 
 
-def discover_heuristics(selected_root: Path, signal_mode: str, max_heuristics: int) -> list[HeuristicSpec]:
+def discover_heuristics(
+    selected_root: Path,
+    signal_mode: str,
+    max_heuristics: int,
+    heuristic_ids: str | None = None,
+) -> list[HeuristicSpec]:
     if not selected_root.exists():
         raise FileNotFoundError(f"Missing selected TSP root: {selected_root}")
+
+    wanted_ids = parse_csv_filter(heuristic_ids, cast=str)
+    wanted_set = set(wanted_ids) if wanted_ids is not None else None
 
     all_modes = ["distance_only", "candidate_list", "edge_prior", "edge_prior_plus_candidate_list"]
     if signal_mode.lower() == "all":
@@ -239,6 +249,8 @@ def discover_heuristics(selected_root: Path, signal_mode: str, max_heuristics: i
         if not mode_dir.exists():
             raise FileNotFoundError(f"Missing signal category folder: {mode_dir}")
         for hdir in sorted([p for p in mode_dir.iterdir() if p.is_dir()]):
+            if wanted_set is not None and hdir.name not in wanted_set:
+                continue
             code = hdir / "heuristic.py"
             if not code.exists():
                 py_files = sorted(hdir.glob("*.py"))
@@ -256,7 +268,10 @@ def discover_heuristics(selected_root: Path, signal_mode: str, max_heuristics: i
     if max_heuristics and max_heuristics > 0:
         specs = specs[: int(max_heuristics)]
     if not specs:
-        raise ValueError(f"No selected heuristics found for signal_mode={signal_mode!r}")
+        raise ValueError(
+            f"No selected heuristics found for signal_mode={signal_mode!r}, "
+            f"heuristic_ids={heuristic_ids!r}, root={selected_root}"
+        )
     return specs
 
 
@@ -313,6 +328,7 @@ def make_problem(
         dist=inst.dist,
         candidate_neighbors=candidate_map,
         prior_map=prior_map,
+        edge_weight_type=inst.edge_weight_type,
     )
     info = {
         "use_candidates": use_candidates,
@@ -689,6 +705,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--signal-mode", default="all", choices=["all", "distance_only", "candidate_list", "edge_prior", "edge_prior_plus_candidate_list"])
     ap.add_argument("--selected-root", default="experiments/selected_tsp_heuristics_final_by_signal")
+    ap.add_argument("--heuristic-ids", default="ALL", help="Comma-separated heuristic folder names to evaluate, or ALL")
     ap.add_argument("--instance-root", required=True)
     ap.add_argument("--candidate-cache-dir", default="")
     ap.add_argument("--edge-prior-cache-dir", default="")
@@ -699,12 +716,14 @@ def main():
     ap.add_argument("--max-heuristics", type=int, default=1000)
     ap.add_argument("--max-instances", type=int, default=1000)
     ap.add_argument("--timeout-s", type=float, default=300.0)
+    ap.add_argument("--dense-distance-threshold", type=int, default=20000, help="Use lazy on-the-fly TSPLIB distances above this n to avoid full n x n matrices.")
     ap.add_argument("--global-seed", type=int, default=12345)
     ap.add_argument("--max-candidates", type=int, default=20)
     ap.add_argument("--prior-mode", default="frequency")
     ap.add_argument("--output-root", default="/tmp/tsp_eval_results")
     ap.add_argument("--output-dir", default="")
     ap.add_argument("--resume", action="store_true")
+    ap.add_argument("--allow-interface-mismatch", action="store_true", help="Accepted for compatibility with older launchers; selected folders are still evaluated as discovered.")
     args = ap.parse_args()
 
     out_dir = Path(args.output_dir) if args.output_dir else Path(args.output_root) / f"tsp_{args.signal_mode}_{time.strftime('%Y%m%d_%H%M%S')}"
@@ -728,13 +747,14 @@ def main():
     candidate_cache_dir = Path(args.candidate_cache_dir).expanduser().resolve() if args.candidate_cache_dir else Path("__missing_candidate_cache__")
     edge_prior_cache_dir = Path(args.edge_prior_cache_dir).expanduser().resolve() if args.edge_prior_cache_dir else Path("__missing_edge_prior_cache__")
 
-    heuristics = discover_heuristics(selected_root, args.signal_mode, args.max_heuristics)
+    heuristics = discover_heuristics(selected_root, args.signal_mode, args.max_heuristics, args.heuristic_ids)
     instances = load_instances(
         instance_root=instance_root,
         optima_csv=optima_csv,
         instances_filter=args.instances,
         split_filter=args.splits,
         max_instances=args.max_instances,
+        dense_distance_threshold=args.dense_distance_threshold,
     )
 
     print(f"Signal mode: {args.signal_mode}")

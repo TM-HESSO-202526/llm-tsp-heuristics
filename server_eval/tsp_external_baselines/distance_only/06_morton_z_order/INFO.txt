@@ -1,0 +1,1 @@
+Morton/Z-order space-filling curve tour; O(n log n) spatial baseline.

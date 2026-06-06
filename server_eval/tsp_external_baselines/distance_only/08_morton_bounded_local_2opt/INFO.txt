@@ -1,0 +1,1 @@
+Morton tour followed by bounded local 2-opt window; no full 2-opt scan.

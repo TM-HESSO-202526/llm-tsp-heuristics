@@ -1,0 +1,1 @@
+Grid-serpentine spatial tour; avoids full pairwise distances.

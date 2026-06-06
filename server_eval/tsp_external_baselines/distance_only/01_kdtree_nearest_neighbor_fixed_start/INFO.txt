@@ -1,0 +1,1 @@
+Approximate KD-tree nearest-neighbor from city 0; no full distance matrix.

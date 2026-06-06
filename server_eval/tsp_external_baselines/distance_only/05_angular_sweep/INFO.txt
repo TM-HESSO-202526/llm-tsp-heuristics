@@ -1,0 +1,1 @@
+Angular sweep around centroid; O(n log n) spatial baseline.
