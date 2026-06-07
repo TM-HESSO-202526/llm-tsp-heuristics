@@ -34,3 +34,5 @@ secrets.*
 
 # OS
 .DS_Store
+
+server_eval/tsp_cpp_distance_eval

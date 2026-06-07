@@ -32,8 +32,10 @@ $REPO_URL = "https://github.com/TM-HESSO-202526/llm-tsp-heuristics.git"
 $LOCAL_INPUT_DIR = "D:\Users\antho\TM\server_eval_tsp_inputs"
 $LOCAL_TSP_INSTANCE_DIR = "$LOCAL_INPUT_DIR\TSP_instances"
 $LOCAL_RESULTS_DIR = "D:\Users\antho\TM\server_eval_results"
+$LOCAL_REPO_ROOT = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+$LOCAL_CPP_EVAL = Join-Path $LOCAL_REPO_ROOT "server_eval\tsp_cpp_distance_eval.cpp"
 
-$RUN_LABEL = "cpp_distance50_selected_and_baselines"
+$RUN_LABEL = "cpp_distance50_direct_translation"
 $REPS = 50
 $INSTANCES = "dsj1000,pr1002,d1291,fl1400,pcb1173,rl1304,u1817,rl1889,pr2392,pcb3038,pla7397,usa13509,pla33810,pla85900"
 $INSTANCE_COUNT = 14
@@ -130,7 +132,12 @@ if [ "$ACTION" = "launch" ]; then
   fi
   cd "$REPO_DIR"
   if [ "$GIT_PULL" = "1" ]; then git pull || true; fi
+  if [ -f /tmp/tsp_cpp_launcher/tsp_cpp_distance_eval.cpp ]; then
+    echo "=== installing uploaded strict C++ evaluator ==="
+    cp /tmp/tsp_cpp_launcher/tsp_cpp_distance_eval.cpp server_eval/tsp_cpp_distance_eval.cpp
+  fi
   echo "=== compiling C++ distance evaluator ==="
+  test -f server_eval/tsp_cpp_distance_eval.cpp || { echo "ERROR missing server_eval/tsp_cpp_distance_eval.cpp"; exit 2; }
   g++ -std=c++17 -O3 -march=native -DNDEBUG -o server_eval/tsp_cpp_distance_eval server_eval/tsp_cpp_distance_eval.cpp
 else
   cd "$REPO_DIR"
@@ -333,6 +340,13 @@ $remoteScript = $remoteScript.Replace("__DRY_RUN__", $DRY_RUN_BASH)
 $tmp = New-TemporaryFile
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($tmp.FullName, ($remoteScript -replace "`r`n", "`n"), $utf8NoBom)
+
+if ($Action -eq "launch") {
+    Write-Host "=== Uploading strict C++ evaluator ==="
+    if (!(Test-Path $LOCAL_CPP_EVAL)) { Write-Host "ERROR missing $LOCAL_CPP_EVAL"; exit 1 }
+    scp "$LOCAL_CPP_EVAL" "${REMOTE}:/tmp/tsp_cpp_launcher/tsp_cpp_distance_eval.cpp"
+    if ($LASTEXITCODE -ne 0) { Remove-Item $tmp.FullName -Force; exit $LASTEXITCODE }
+}
 
 Write-Host "=== Uploading remote launcher ==="
 scp $tmp.FullName "${REMOTE}:/tmp/tsp_cpp_launcher/launch_tsp_cpp_distance50_batch.sh"
