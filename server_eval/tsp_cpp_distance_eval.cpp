@@ -745,6 +745,47 @@ static vector<int> H09_mst_diagnostic_exact(const Instance& inst, RNG& rng, cons
     return hamiltonian_tour;
 }
 
+
+static vector<int> H12_D1_nn_constructive_only(const Instance& inst, RNG& rng, const Deadline& dl) {
+    // Direct translation of D1_nn_constructive_only/heuristic.py:
+    // - perform min(10, n) random nearest-neighbor starts
+    // - keep the tour with the lowest objective value
+    int n = (int)inst.p.size();
+    vector<int> best_tour;
+    double best_cost = numeric_limits<double>::infinity();
+    int starts = min(10, n);
+    for (int r=0; r<starts; r++) {
+        dl.check();
+        int current_city = rng.randint(n);
+        vector<int> tour;
+        tour.reserve(n);
+        vector<char> visited(n, 0);
+        tour.push_back(current_city);
+        visited[current_city] = 1;
+        while ((int)tour.size() < n) {
+            dl.check();
+            long long best = numeric_limits<long long>::max();
+            int nearest_city = -1;
+            for (int city=0; city<n; city++) {
+                if (visited[city]) continue;
+                if ((city & 16383) == 0) dl.check();
+                long long d = edge_cost(inst, current_city, city);
+                if (d < best) { best = d; nearest_city = city; }
+            }
+            if (nearest_city < 0) throw runtime_error("D1 nearest-neighbor failed");
+            tour.push_back(nearest_city);
+            current_city = nearest_city;
+            visited[current_city] = 1;
+        }
+        double c = tour_cost(inst, tour);
+        if (c < best_cost) {
+            best_cost = c;
+            best_tour = move(tour);
+        }
+    }
+    return best_tour;
+}
+
 static vector<int> method_tour(const string& method, const Instance& inst, uint64_t seed, double timeout_s) {
     Deadline dl(timeout_s);
     RNG rng(seed);
@@ -759,6 +800,8 @@ static vector<int> method_tour(const string& method, const Instance& inst, uint6
     if (method == "09_family_focus_mst_diagnostic_100159_iter007") return H09_mst_diagnostic_exact(inst, rng, dl);
     if (method == "10_family_focus_fast_convex_095803_iter026") return convex_outside_in_exact(inst, 5, 2, dl);
     if (method == "11_family_focus_convex_constructive_095803_iter021") return convex_outside_in_exact(inst, 0, 0, dl);
+    if (method == "12_D1_nn_constructive_only") return H12_D1_nn_constructive_only(inst, rng, dl);
+    if (method == "13_D2a_convex_hull_outside_in_with_cleanup") return convex_outside_in_exact(inst, 3, 0, dl);
 
     // C++ external baselines. These are not translations of selected LLM code.
     if (method == "01_kdtree_nearest_neighbor_fixed_start") return nearest_neighbor_full(inst, 0, dl);

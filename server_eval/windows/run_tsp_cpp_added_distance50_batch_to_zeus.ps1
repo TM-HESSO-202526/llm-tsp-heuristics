@@ -1,10 +1,10 @@
 # ============================================================
-# Final TSP C++ distance-only 50-repetition batch launcher for Zeus
+# Final TSP C++ added distance-only heuristic 50-repetition batch launcher for Zeus
 #
 # Commands:
-#   .\run_tsp_cpp_distance50_batch_to_zeus.ps1 -Action launch -StartNewRun
-#   .\run_tsp_cpp_distance50_batch_to_zeus.ps1 -Action status
-#   .\run_tsp_cpp_distance50_batch_to_zeus.ps1 -Action download
+#   .\run_tsp_cpp_added_distance50_batch_to_zeus.ps1 -Action launch -StartNewRun
+#   .\run_tsp_cpp_added_distance50_batch_to_zeus.ps1 -Action status
+#   .\run_tsp_cpp_added_distance50_batch_to_zeus.ps1 -Action download
 #
 # Protocol:
 # - selected distance-only LLM heuristics translated to C++
@@ -35,7 +35,7 @@ $LOCAL_RESULTS_DIR = "D:\Users\antho\TM\server_eval_results"
 $LOCAL_REPO_ROOT = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $LOCAL_CPP_EVAL = Join-Path $LOCAL_REPO_ROOT "server_eval\tsp_cpp_distance_eval.cpp"
 
-$RUN_LABEL = "cpp_distance50_direct_translation"
+$RUN_LABEL = "cpp_distance50_added_D1_D2a"
 $REPS = 50
 $INSTANCES = "dsj1000,pr1002,d1291,fl1400,pcb1173,rl1304,u1817,rl1889,pr2392,pcb3038,pla7397,usa13509,pla33810,pla85900"
 $INSTANCE_COUNT = 14
@@ -55,7 +55,7 @@ $START_NEW_RUN_BASH = B $StartNewRun
 $GIT_PULL_BASH = B (-not $NoGitPull)
 $DRY_RUN_BASH = B $DryRun
 
-Write-Host "=== TSP C++ distance-only 50-repetition batch ==="
+Write-Host "=== TSP C++ added distance-only D1/D2a 50-repetition batch ==="
 Write-Host "Remote:        $REMOTE"
 Write-Host "Action:        $Action"
 Write-Host "Run label:     $RUN_LABEL"
@@ -121,7 +121,7 @@ REPO_DIR="${WORK_ROOT}/llm-tsp-heuristics"
 INSTANCE_ROOT="/home/${AAI_USERNAME}/data-local/TM/tsp_input/TSP_instances"
 OUT_ROOT="${WORK_ROOT}/final-results/tsp_cpp_distance50_batch"
 LATEST_FILE="${OUT_ROOT}/LATEST_${RUN_LABEL}.txt"
-SCHEDULER_SESSION="tspcpp50_scheduler"
+SCHEDULER_SESSION="tspcppadded50_scheduler"
 
 mkdir -p "$WORK_ROOT" "$INSTANCE_ROOT" "$OUT_ROOT"
 
@@ -162,25 +162,8 @@ mkdir -p "$JOB_STATE"
 
 write_job_list() {
 cat > "$JOB_LIST" <<'JOBS'
-H_TSPD_CPP_02_normal_raw_nn2opt_best_101102_iter003	heuristic	distance_only	02_normal_raw_nn2opt_best_101102_iter003
-H_TSPD_CPP_03_family_focus_grid_best_100159_iter072	heuristic	distance_only	03_family_focus_grid_best_100159_iter072
-H_TSPD_CPP_04_family_focus_convex_faithful_095803_iter031	heuristic	distance_only	04_family_focus_convex_faithful_095803_iter031
-H_TSPD_CPP_05_family_focus_voronoi_best_100159_iter037	heuristic	distance_only	05_family_focus_voronoi_best_100159_iter037
-H_TSPD_CPP_07_family_focus_region_endpoint_fast_100159_iter177	heuristic	distance_only	07_family_focus_region_endpoint_fast_100159_iter177
-H_TSPD_CPP_08_expo_distance_only_geostabilizer_399e	heuristic	distance_only	08_expo_distance_only_geostabilizer_399e
-H_TSPD_CPP_09_family_focus_mst_diagnostic_100159_iter007	heuristic	distance_only	09_family_focus_mst_diagnostic_100159_iter007
-H_TSPD_CPP_10_family_focus_fast_convex_095803_iter026	heuristic	distance_only	10_family_focus_fast_convex_095803_iter026
-H_TSPD_CPP_11_family_focus_convex_constructive_095803_iter021	heuristic	distance_only	11_family_focus_convex_constructive_095803_iter021
 H_TSPD_CPP_12_D1_nn_constructive_only	heuristic	distance_only	12_D1_nn_constructive_only
 H_TSPD_CPP_13_D2a_convex_hull_outside_in_with_cleanup	heuristic	distance_only	13_D2a_convex_hull_outside_in_with_cleanup
-B_TSPD_CPP_01_kdtree_nearest_neighbor_fixed_start	baseline	distance_only	01_kdtree_nearest_neighbor_fixed_start
-B_TSPD_CPP_02_kdtree_nearest_neighbor_multistart	baseline	distance_only	02_kdtree_nearest_neighbor_multistart
-B_TSPD_CPP_03_x_axis_sweep	baseline	distance_only	03_x_axis_sweep
-B_TSPD_CPP_04_pca_sweep	baseline	distance_only	04_pca_sweep
-B_TSPD_CPP_05_angular_sweep	baseline	distance_only	05_angular_sweep
-B_TSPD_CPP_06_morton_z_order	baseline	distance_only	06_morton_z_order
-B_TSPD_CPP_07_grid_serpentine	baseline	distance_only	07_grid_serpentine
-B_TSPD_CPP_08_morton_bounded_local_2opt	baseline	distance_only	08_morton_bounded_local_2opt
 JOBS
 }
 
@@ -191,7 +174,7 @@ cat > "$RUN_ROOT/run_config.json" <<EOF
 {"run_label":"$RUN_LABEL","language":"cpp","repetitions":$REPS,"instances":"$INSTANCES","expected_tasks_per_job":$EXPECTED_TASKS,"cores_csv":"$CORES_CSV","timeout_s":$TIMEOUT_S,"global_seed":$GLOBAL_SEED,"run_root":"$RUN_ROOT","updated_at":"$(date '+%Y-%m-%d %H:%M:%S')"}
 EOF
 
-sanitize_session(){ local s="tspcpp50_$1"; echo "$s" | tr -c 'A-Za-z0-9_' '_' | cut -c1-80; }
+sanitize_session(){ local s="tspcppadded50_$1"; echo "$s" | tr -c 'A-Za-z0-9_' '_' | cut -c1-80; }
 row_count(){ local raw="$RUN_ROOT/$1/raw_results.csv"; if [ ! -f "$raw" ]; then echo 0; else local l; l=$(wc -l < "$raw" 2>/dev/null || echo 0); if [ "$l" -le 0 ]; then echo 0; else echo $((l-1)); fi; fi; }
 is_session_alive(){ tmux has-session -t "$1" 2>/dev/null; }
 
@@ -205,7 +188,7 @@ status_one(){
 }
 
 print_status(){
-  echo "=== TSP C++ DISTANCE-ONLY 50REPS STATUS ==="
+  echo "=== TSP C++ ADDED D1/D2a 50REPS STATUS ==="
   date; hostname
   echo "RUN_ROOT=$RUN_ROOT"
   echo "JOB_LIST=$JOB_LIST"
@@ -230,7 +213,7 @@ print_status(){
   echo
   echo "TOTAL_JOBS=$total COMPLETE=$complete RUNNING=$running PENDING=$pending INCOMPLETE=$incomplete"
   echo
-  echo "=== tmux sessions ==="; tmux ls 2>/dev/null | grep -E 'tspcpp50_|tspcpp50_scheduler' || true
+  echo "=== tmux sessions ==="; tmux ls 2>/dev/null | grep -E 'tspcppadded50_|tspcppadded50_scheduler' || true
 }
 
 make_run_one(){

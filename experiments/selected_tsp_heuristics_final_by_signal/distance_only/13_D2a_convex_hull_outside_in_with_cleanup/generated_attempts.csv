@@ -1,0 +1,463 @@
+attempt,iteration,objective_mode,center_constraint,name,family,code_hash,valid,full_valid,valid_instances,total_instances,mean_gap_percent,selection_score,mean_runtime_s,parent_attempt,selection_strategy,prompt_mode,error,code_path,raw_response_path,prompt_path,family_desc,feedback_by_instance,search_cost_mean,search_gap_ref_mean_pct,partial_valid_cases,partial_total_cases,partial_failed_cases,family_focus_active,focus_family_id,focus_family_name,focus_family_step,focus_family_index,focus_family_total,family_focus_compliant,family_focus_compliance_level,family_focus_mismatch_reason,algo_name,family_sig,search_gap_ref_mean,search_runtime_mean_s
+1,1,tsp,permutation_tour,Voronoi Regions with Local Ordering and Bridge Selection,nearest_neighbor,55415ba76fc102db,False,False,0,3,,,,,1+1,initial,list index out of range,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_001_55415ba76fc102db.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_001.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_001.txt,nearest-neighbor constructive tour builder,"dsj1000: valid 0/1, errors=list index out of range
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+pr1002: valid 0/1, errors=list index out of range
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+d1291: valid 0/1, errors=list index out of range
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^",,,0,3,3,True,voronoi_regions,Voronoi / region decomposition,1,0,3,False,partial,"Region/Voronoi structure appears, but the code also leans on nearest-neighbor, insertion, or 2-opt-style logic.",Voronoi Regions with Local Ordering and Bridge Selection,nearest_neighbor,,
+2,2,tsp,permutation_tour,Voronoi Regions with Region Bridge Selection,nearest_neighbor,9cc2a9fad195e701,False,False,0,3,,,,1.0,1+1,redesign_invalid_parent,tour length 2 != n=1000,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_002_9cc2a9fad195e701.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_002.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_002.txt,nearest-neighbor constructive tour builder,"dsj1000: valid 0/1, errors=tour length 2 != n=1000
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 133, in evaluate_code_on_problem
+    validate_tour(tour, problem.n)
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/distance.py"", line 50, in validate_tour
+pr1002: valid 0/1, errors=tour length 6 != n=1002
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 133, in evaluate_code_on_problem
+    validate_tour(tour, problem.n)
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/distance.py"", line 50, in validate_tour
+d1291: valid 0/1, errors=tour length 7 != n=1291
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 133, in evaluate_code_on_problem
+    validate_tour(tour, problem.n)
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/distance.py"", line 50, in validate_tour",,,0,3,3,True,voronoi_regions,Voronoi / region decomposition,2,0,3,False,partial,"Region/Voronoi structure appears, but the code also leans on nearest-neighbor, insertion, or 2-opt-style logic.",Voronoi Regions with Region Bridge Selection,nearest_neighbor,,
+3,3,tsp,permutation_tour,Voronoi Regions with K-Means Clustering and Local Path Construction,nearest_neighbor,e4a9916c9fbdd20b,False,False,0,3,,,,2.0,1+1,redesign_invalid_parent,tour length 120 != n=1000,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_003_e4a9916c9fbdd20b.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_003.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_003.txt,nearest-neighbor constructive tour builder,"dsj1000: valid 0/1, errors=tour length 120 != n=1000
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 133, in evaluate_code_on_problem
+    validate_tour(tour, problem.n)
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/distance.py"", line 50, in validate_tour
+pr1002: valid 0/1, errors=tour length 77 != n=1002
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 133, in evaluate_code_on_problem
+    validate_tour(tour, problem.n)
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/distance.py"", line 50, in validate_tour
+d1291: valid 0/1, errors=tour length 122 != n=1291
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 133, in evaluate_code_on_problem
+    validate_tour(tour, problem.n)
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/distance.py"", line 50, in validate_tour",,,0,3,3,True,voronoi_regions,Voronoi / region decomposition,3,0,3,False,partial,"Region/Voronoi structure appears, but the code also leans on nearest-neighbor, insertion, or 2-opt-style logic.",Voronoi Regions with K-Means Clustering and Local Path Construction,nearest_neighbor,,
+4,4,tsp,permutation_tour,Voronoi Regions with Randomized Local Path Construction and Deliberate Bridge Selection,nearest_neighbor,81bc613ff3665cc6,False,False,0,3,,,,3.0,1+1,redesign_invalid_parent,tour length 40 != n=1000,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_004_81bc613ff3665cc6.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_004.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_004.txt,nearest-neighbor constructive tour builder,"dsj1000: valid 0/1, errors=tour length 40 != n=1000
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 133, in evaluate_code_on_problem
+    validate_tour(tour, problem.n)
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/distance.py"", line 50, in validate_tour
+pr1002: valid 0/1, errors=tour length 86 != n=1002
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 133, in evaluate_code_on_problem
+    validate_tour(tour, problem.n)
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/distance.py"", line 50, in validate_tour
+d1291: valid 0/1, errors=tour length 72 != n=1291
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 133, in evaluate_code_on_problem
+    validate_tour(tour, problem.n)
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/distance.py"", line 50, in validate_tour",,,0,3,3,True,voronoi_regions,Voronoi / region decomposition,4,0,3,False,partial,"Region/Voronoi structure appears, but the code also leans on nearest-neighbor, insertion, or 2-opt-style logic.",Voronoi Regions with Randomized Local Path Construction and Deliberate Bridge Selection,nearest_neighbor,,
+5,5,tsp,permutation_tour,Voronoi Regions with Balanced Local Path Construction and Efficient Bridge Selection,nearest_neighbor,fdfced82014bfab2,False,False,0,3,,,,4.0,1+1,redesign_invalid_parent,tour length 48 != n=1000,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_005_fdfced82014bfab2.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_005.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_005.txt,nearest-neighbor constructive tour builder,"dsj1000: valid 0/1, errors=tour length 48 != n=1000
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 133, in evaluate_code_on_problem
+    validate_tour(tour, problem.n)
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/distance.py"", line 50, in validate_tour
+pr1002: valid 0/1, errors=tour length 158 != n=1002
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 133, in evaluate_code_on_problem
+    validate_tour(tour, problem.n)
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/distance.py"", line 50, in validate_tour
+d1291: valid 0/1, errors=tour length 143 != n=1291
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 133, in evaluate_code_on_problem
+    validate_tour(tour, problem.n)
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/distance.py"", line 50, in validate_tour",,,0,3,3,True,voronoi_regions,Voronoi / region decomposition,5,0,3,False,partial,"Region/Voronoi structure appears, but the code also leans on nearest-neighbor, insertion, or 2-opt-style logic.",Voronoi Regions with Balanced Local Path Construction and Efficient Bridge Selection,nearest_neighbor,,
+6,6,tsp,permutation_tour,Voronoi Regions with Efficient Local Path Construction and Bridge Selection,nearest_neighbor,338bfc79b326dcc7,True,True,3,3,67.88601633018227,67.88601633018227,0.036462863286336265,5.0,1+1,redesign_invalid_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_006_338bfc79b326dcc7.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_006.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_006.txt,nearest-neighbor constructive tour builder,"dsj1000: valid 1/1, gap_vs_opt=55.454%, cost=2.90073e+07, runtime=0.036s, NA
+pr1002: valid 1/1, gap_vs_opt=65.483%, cost=428675, runtime=0.031s, NA
+d1291: valid 1/1, gap_vs_opt=82.721%, cost=92824, runtime=0.042s, NA",9842935.333333334,67.88601633018227,3,3,0,True,voronoi_regions,Voronoi / region decomposition,6,0,3,False,partial,"Region/Voronoi structure appears, but the code also leans on nearest-neighbor, insertion, or 2-opt-style logic.",Voronoi Regions with Efficient Local Path Construction and Bridge Selection,nearest_neighbor,67.88601633018227,0.036462863286336265
+7,7,tsp,permutation_tour,"Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Region Optimization",nearest_neighbor_2opt,88ebe7e6524c2f67,True,True,3,3,57.34665816760921,57.34665816760921,3.3142619927724204,6.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_007_88ebe7e6524c2f67.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_007.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_007.txt,nearest-neighbor construction with bounded 2-opt-style improvement,"dsj1000: valid 1/1, gap_vs_opt=58.801%, cost=2.96318e+07, runtime=3.684s, NA
+pr1002: valid 1/1, gap_vs_opt=46.374%, cost=379174, runtime=2.272s, NA
+d1291: valid 1/1, gap_vs_opt=66.865%, cost=84769, runtime=3.987s, NA",10031926.666666666,57.34665816760921,3,3,0,True,voronoi_regions,Voronoi / region decomposition,7,0,3,False,partial,"Region/Voronoi structure appears, but the code also leans on nearest-neighbor, insertion, or 2-opt-style logic.","Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Region Optimization",nearest_neighbor_2opt,57.34665816760921,3.3142619927724204
+8,8,tsp,permutation_tour,Voronoi Regions with Improved Local Path Construction and Efficient Bridge Selection,nearest_neighbor_2opt,658bad1d152244a9,False,False,0,3,,,,7.0,1+1,mutate_parent,candidate timed out after 60.0s,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_008_658bad1d152244a9.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_008.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_008.txt,nearest-neighbor construction with bounded 2-opt-style improvement,"dsj1000: valid 0/1, errors=candidate timed out after 60.0s
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+pr1002: valid 0/1, errors=candidate timed out after 60.0s
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+d1291: valid 0/1, errors=candidate timed out after 60.0s
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^",,,0,3,3,True,voronoi_regions,Voronoi / region decomposition,8,0,3,False,partial,"Region/Voronoi structure appears, but the code also leans on nearest-neighbor, insertion, or 2-opt-style logic.",Voronoi Regions with Improved Local Path Construction and Efficient Bridge Selection,nearest_neighbor_2opt,,
+9,9,tsp,permutation_tour,"Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Enhanced Region Optimization",nearest_neighbor_2opt,a97a98f9f411c2af,True,True,3,3,53.93005097399035,53.93005097399035,2.1829217274983725,7.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_009_a97a98f9f411c2af.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_009.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_009.txt,nearest-neighbor construction with bounded 2-opt-style improvement,"dsj1000: valid 1/1, gap_vs_opt=50.539%, cost=2.809e+07, runtime=2.072s, NA
+pr1002: valid 1/1, gap_vs_opt=52.607%, cost=395321, runtime=2.196s, NA
+d1291: valid 1/1, gap_vs_opt=58.645%, cost=80593, runtime=2.281s, NA",9521980.0,53.93005097399035,3,3,0,True,voronoi_regions,Voronoi / region decomposition,9,0,3,False,partial,"Region/Voronoi structure appears, but the code also leans on nearest-neighbor, insertion, or 2-opt-style logic.","Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Enhanced Region Optimization",nearest_neighbor_2opt,53.93005097399035,2.1829217274983725
+10,10,tsp,permutation_tour,"Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Enhanced Region Ordering",nearest_neighbor_2opt,1b7258c5a1082ab5,True,True,3,3,53.255371220147275,53.255371220147275,3.2980004151662192,9.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_010_1b7258c5a1082ab5.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_010.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_010.txt,nearest-neighbor construction with bounded 2-opt-style improvement,"dsj1000: valid 1/1, gap_vs_opt=55.746%, cost=2.90617e+07, runtime=5.827s, NA
+pr1002: valid 1/1, gap_vs_opt=51.336%, cost=392029, runtime=2.086s, NA
+d1291: valid 1/1, gap_vs_opt=52.684%, cost=77565, runtime=1.981s, NA",9843761.666666666,53.255371220147275,3,3,0,True,voronoi_regions,Voronoi / region decomposition,10,0,3,False,partial,"Region/Voronoi structure appears, but the code also leans on nearest-neighbor, insertion, or 2-opt-style logic.","Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Enhanced Region Ordering",nearest_neighbor_2opt,53.255371220147275,3.2980004151662192
+11,11,tsp,permutation_tour,"Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Enhanced Region Ordering with Loc",nearest_neighbor_2opt,40f07fddf781e5b9,True,True,3,3,60.54638598516724,60.54638598516724,3.724577029546102,10.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_011_40f07fddf781e5b9.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_011.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_011.txt,nearest-neighbor construction with bounded 2-opt-style improvement,"dsj1000: valid 1/1, gap_vs_opt=63.649%, cost=3.05364e+07, runtime=3.745s, NA
+pr1002: valid 1/1, gap_vs_opt=50.172%, cost=389014, runtime=4.022s, NA
+d1291: valid 1/1, gap_vs_opt=67.818%, cost=85253, runtime=3.407s, NA",10336901.0,60.54638598516724,3,3,0,True,voronoi_regions,Voronoi / region decomposition,11,0,3,False,partial,"Region/Voronoi structure appears, but the code also leans on nearest-neighbor, insertion, or 2-opt-style logic.","Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Enhanced Region Ordering with Loc",nearest_neighbor_2opt,60.54638598516724,3.724577029546102
+12,12,tsp,permutation_tour,"Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Enhanced Region Ordering with Ada",nearest_neighbor_2opt,a7491538257d6310,True,True,3,3,49.802824842441225,49.802824842441225,2.6246862411499023,10.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_012_a7491538257d6310.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_012.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_012.txt,nearest-neighbor construction with bounded 2-opt-style improvement,"dsj1000: valid 1/1, gap_vs_opt=44.180%, cost=2.69036e+07, runtime=3.185s, NA
+pr1002: valid 1/1, gap_vs_opt=51.090%, cost=391390, runtime=2.385s, NA
+d1291: valid 1/1, gap_vs_opt=54.139%, cost=78304, runtime=2.304s, NA",9124423.0,49.802824842441225,3,3,0,True,voronoi_regions,Voronoi / region decomposition,12,0,3,False,partial,"Region/Voronoi structure appears, but the code also leans on nearest-neighbor, insertion, or 2-opt-style logic.","Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Enhanced Region Ordering with Ada",nearest_neighbor_2opt,49.802824842441225,2.6246862411499023
+13,13,tsp,permutation_tour,"Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Enhanced Region Ordering with Ada",nearest_neighbor_2opt,de860ab5d8e3bef4,True,True,3,3,53.63049196118258,53.63049196118258,3.2297627131144204,12.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_013_de860ab5d8e3bef4.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_013.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_013.txt,nearest-neighbor construction with bounded 2-opt-style improvement,"dsj1000: valid 1/1, gap_vs_opt=57.124%, cost=2.93188e+07, runtime=5.502s, NA
+pr1002: valid 1/1, gap_vs_opt=49.470%, cost=387194, runtime=1.966s, NA
+d1291: valid 1/1, gap_vs_opt=54.298%, cost=78385, runtime=2.222s, NA",9928114.333333334,53.63049196118258,3,3,0,True,voronoi_regions,Voronoi / region decomposition,13,0,3,False,partial,"Region/Voronoi structure appears, but the code also leans on nearest-neighbor, insertion, or 2-opt-style logic.","Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Enhanced Region Ordering with Ada",nearest_neighbor_2opt,53.63049196118258,3.2297627131144204
+14,14,tsp,permutation_tour,"Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Enhanced Region Ordering with Ada",nearest_neighbor_2opt,e34c0699a30f1d74,True,True,3,3,84.04092541534152,84.04092541534152,2.772562106450399,12.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_014_e34c0699a30f1d74.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_014.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_014.txt,nearest-neighbor construction with bounded 2-opt-style improvement,"dsj1000: valid 1/1, gap_vs_opt=84.762%, cost=3.44761e+07, runtime=3.692s, NA
+pr1002: valid 1/1, gap_vs_opt=85.870%, cost=481487, runtime=2.790s, NA
+d1291: valid 1/1, gap_vs_opt=81.491%, cost=92199, runtime=1.836s, NA",11683247.333333334,84.04092541534152,3,3,0,True,voronoi_regions,Voronoi / region decomposition,14,0,3,False,partial,"Region/Voronoi structure appears, but the code also leans on nearest-neighbor, insertion, or 2-opt-style logic.","Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Enhanced Region Ordering with Ada",nearest_neighbor_2opt,84.04092541534152,2.772562106450399
+15,15,tsp,permutation_tour,"Improved Voronoi Regions with Efficient Local Path Construction, Enhanced Bridge Selection, and Adaptive Region Ordering",nearest_neighbor_2opt,3066b306d7e2a176,True,True,3,3,55.83659389589996,55.83659389589996,2.899050156275431,12.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_015_3066b306d7e2a176.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_015.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_015.txt,nearest-neighbor construction with bounded 2-opt-style improvement,"dsj1000: valid 1/1, gap_vs_opt=60.888%, cost=3.00213e+07, runtime=1.978s, NA
+pr1002: valid 1/1, gap_vs_opt=47.687%, cost=382577, runtime=3.352s, NA
+d1291: valid 1/1, gap_vs_opt=58.934%, cost=80740, runtime=3.367s, NA",10161532.333333334,55.83659389589996,3,3,0,True,voronoi_regions,Voronoi / region decomposition,15,0,3,False,partial,"Region/Voronoi structure appears, but the code also leans on nearest-neighbor, insertion, or 2-opt-style logic.","Improved Voronoi Regions with Efficient Local Path Construction, Enhanced Bridge Selection, and Adaptive Region Ordering",nearest_neighbor_2opt,55.83659389589996,2.899050156275431
+16,16,tsp,permutation_tour,"Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Enhanced Region Ordering with Ada",nearest_neighbor_2opt,98df349638953e62,False,False,0,3,,,,12.0,1+1,mutate_parent,tour length 905 != n=1000,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_016_98df349638953e62.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_016.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_016.txt,nearest-neighbor construction with bounded 2-opt-style improvement,"dsj1000: valid 0/1, errors=tour length 905 != n=1000
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 133, in evaluate_code_on_problem
+    validate_tour(tour, problem.n)
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/distance.py"", line 50, in validate_tour
+pr1002: valid 0/1, errors=tour length 927 != n=1002
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 133, in evaluate_code_on_problem
+    validate_tour(tour, problem.n)
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/distance.py"", line 50, in validate_tour
+d1291: valid 0/1, errors=tour length 1237 != n=1291
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 133, in evaluate_code_on_problem
+    validate_tour(tour, problem.n)
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/distance.py"", line 50, in validate_tour",,,0,3,3,True,voronoi_regions,Voronoi / region decomposition,16,0,3,False,partial,"Region/Voronoi structure appears, but the code also leans on nearest-neighbor, insertion, or 2-opt-style logic.","Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Enhanced Region Ordering with Ada",nearest_neighbor_2opt,,
+17,17,tsp,permutation_tour,"Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Enhanced Region Ordering using Re",nearest_neighbor_2opt,43387b80f4e2ee8a,True,True,3,3,55.56067320694041,55.56067320694041,3.0297861893971763,12.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_017_43387b80f4e2ee8a.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_017.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_017.txt,nearest-neighbor construction with bounded 2-opt-style improvement,"dsj1000: valid 1/1, gap_vs_opt=47.538%, cost=2.75302e+07, runtime=2.976s, NA
+pr1002: valid 1/1, gap_vs_opt=56.438%, cost=405245, runtime=2.916s, NA
+d1291: valid 1/1, gap_vs_opt=62.705%, cost=82656, runtime=3.197s, NA",9339374.333333334,55.56067320694041,3,3,0,True,voronoi_regions,Voronoi / region decomposition,17,0,3,False,partial,"Region/Voronoi structure appears, but the code also leans on nearest-neighbor, insertion, or 2-opt-style logic.","Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Enhanced Region Ordering using Re",nearest_neighbor_2opt,55.56067320694041,3.0297861893971763
+18,18,tsp,permutation_tour,"Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Enhanced Region Ordering with Ada",nearest_neighbor_2opt,77942707d25ab8d8,True,True,3,3,51.7149061933087,51.7149061933087,3.0520108540852866,12.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_018_77942707d25ab8d8.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_018.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_018.txt,nearest-neighbor construction with bounded 2-opt-style improvement,"dsj1000: valid 1/1, gap_vs_opt=57.712%, cost=2.94286e+07, runtime=2.031s, NA
+pr1002: valid 1/1, gap_vs_opt=50.817%, cost=390685, runtime=2.411s, NA
+d1291: valid 1/1, gap_vs_opt=46.615%, cost=74482, runtime=4.714s, NA",9964582.333333334,51.7149061933087,3,3,0,True,voronoi_regions,Voronoi / region decomposition,18,0,3,False,partial,"Region/Voronoi structure appears, but the code also leans on nearest-neighbor, insertion, or 2-opt-style logic.","Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Enhanced Region Ordering with Ada",nearest_neighbor_2opt,51.7149061933087,3.0520108540852866
+19,19,tsp,permutation_tour,"Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Enhanced Region Ordering with Ada",nearest_neighbor_2opt,9511dad181db31e3,True,True,3,3,50.79860651434077,50.79860651434077,2.7191731929779053,12.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_019_9511dad181db31e3.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_019.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_019.txt,nearest-neighbor construction with bounded 2-opt-style improvement,"dsj1000: valid 1/1, gap_vs_opt=47.410%, cost=2.75062e+07, runtime=2.889s, NA
+pr1002: valid 1/1, gap_vs_opt=50.851%, cost=390773, runtime=1.990s, NA
+d1291: valid 1/1, gap_vs_opt=54.135%, cost=78302, runtime=3.278s, NA",9325086.0,50.79860651434077,3,3,0,True,voronoi_regions,Voronoi / region decomposition,19,0,3,False,partial,"Region/Voronoi structure appears, but the code also leans on nearest-neighbor, insertion, or 2-opt-style logic.","Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Enhanced Region Ordering with Ada",nearest_neighbor_2opt,50.79860651434077,2.7191731929779053
+20,20,tsp,permutation_tour,"Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Enhanced Region Ordering with Ada",nearest_neighbor_2opt,0db2b2c13ce91e9b,True,True,3,3,44.50911367242555,44.50911367242555,4.84149448076884,12.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_020_0db2b2c13ce91e9b.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_020.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_020.txt,nearest-neighbor construction with bounded 2-opt-style improvement,"dsj1000: valid 1/1, gap_vs_opt=46.977%, cost=2.74255e+07, runtime=4.499s, NA
+pr1002: valid 1/1, gap_vs_opt=41.568%, cost=366726, runtime=4.673s, NA
+d1291: valid 1/1, gap_vs_opt=44.981%, cost=73652, runtime=5.353s, NA",9288639.666666666,44.50911367242555,3,3,0,True,voronoi_regions,Voronoi / region decomposition,20,0,3,False,partial,"Region/Voronoi structure appears, but the code also leans on nearest-neighbor, insertion, or 2-opt-style logic.","Voronoi Regions with Efficient Local Path Construction, Improved Bridge Selection, and Enhanced Region Ordering with Ada",nearest_neighbor_2opt,44.50911367242555,4.84149448076884
+21,21,tsp,permutation_tour,ConvexHullOutsideIn,insertion_constructive,aae8d28893b2b7c2,True,True,3,3,16.207914581028447,16.207914581028447,0.7474135557810465,,1+1,initial,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_021_aae8d28893b2b7c2.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_021.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_021.txt,insertion constructive tour builder,"dsj1000: valid 1/1, gap_vs_opt=10.752%, cost=2.0666e+07, runtime=0.612s, NA
+pr1002: valid 1/1, gap_vs_opt=21.228%, cost=314036, runtime=0.630s, NA
+d1291: valid 1/1, gap_vs_opt=16.643%, cost=59256, runtime=0.999s, NA",7013090.666666667,16.207914581028447,3,3,0,True,convex_hull_outside_in,Convex hull / outside-in insertion,1,1,3,True,compliant,Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family.,ConvexHullOutsideIn,insertion_constructive,16.207914581028447,0.7474135557810465
+22,22,tsp,permutation_tour,ConvexHullOutsideInImproved,insertion_2opt,4a7ede7533438da2,False,False,0,3,,,,21.0,1+1,mutate_parent,candidate timed out after 60.0s,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_022_4a7ede7533438da2.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_022.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_022.txt,insertion construction with bounded 2-opt-style improvement,"dsj1000: valid 0/1, errors=candidate timed out after 60.0s
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+pr1002: valid 0/1, errors=candidate timed out after 60.0s
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+d1291: valid 0/1, errors=candidate timed out after 60.0s
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^",,,0,3,3,True,convex_hull_outside_in,Convex hull / outside-in insertion,2,1,3,True,compliant,Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family.,ConvexHullOutsideInImproved,insertion_2opt,,
+23,23,tsp,permutation_tour,ConvexHullOutsideInImprovedV2,insertion_constructive,7a3f356608973160,True,True,3,3,16.126645969247072,16.126645969247072,1.2322916984558105,21.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_023_7a3f356608973160.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_023.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_023.txt,insertion constructive tour builder,"dsj1000: valid 1/1, gap_vs_opt=10.648%, cost=2.06466e+07, runtime=1.171s, NA
+pr1002: valid 1/1, gap_vs_opt=21.124%, cost=313765, runtime=0.668s, NA
+d1291: valid 1/1, gap_vs_opt=16.608%, cost=59238, runtime=1.858s, NA",7006540.666666667,16.126645969247072,3,3,0,True,convex_hull_outside_in,Convex hull / outside-in insertion,3,1,3,True,compliant,Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family.,ConvexHullOutsideInImprovedV2,insertion_constructive,16.126645969247072,1.2322916984558105
+24,24,tsp,permutation_tour,ConvexHullOutsideInImprovedV3,insertion_constructive,f4ce1f7c257e0098,False,False,0,3,,,,23.0,1+1,mutate_parent,candidate timed out after 60.0s,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_024_f4ce1f7c257e0098.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_024.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_024.txt,insertion constructive tour builder,"dsj1000: valid 0/1, errors=candidate timed out after 60.0s
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+pr1002: valid 0/1, errors=candidate timed out after 60.0s
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+d1291: valid 0/1, errors=candidate timed out after 60.0s
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^",,,0,3,3,True,convex_hull_outside_in,Convex hull / outside-in insertion,4,1,3,True,compliant,Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family.,ConvexHullOutsideInImprovedV3,insertion_constructive,,
+25,25,tsp,permutation_tour,ConvexHullOutsideInImprovedV4,insertion_constructive,6a767b4ed31c8736,True,True,3,3,16.09361687124996,16.09361687124996,1.2277856667836506,23.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_025_6a767b4ed31c8736.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_025.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_025.txt,insertion constructive tour builder,"dsj1000: valid 1/1, gap_vs_opt=10.635%, cost=2.06441e+07, runtime=0.748s, NA
+pr1002: valid 1/1, gap_vs_opt=21.109%, cost=313727, runtime=0.674s, NA
+d1291: valid 1/1, gap_vs_opt=16.537%, cost=59202, runtime=2.261s, NA",7005673.0,16.09361687124996,3,3,0,True,convex_hull_outside_in,Convex hull / outside-in insertion,5,1,3,True,compliant,Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family.,ConvexHullOutsideInImprovedV4,insertion_constructive,16.09361687124996,1.2277856667836506
+26,26,tsp,permutation_tour,ConvexHullOutsideInImprovedV5,insertion_2opt,3c93f6b60b542131,True,True,3,3,15.93772077991436,15.93772077991436,1.992835283279419,25.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_026_3c93f6b60b542131.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_026.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_026.txt,insertion construction with bounded 2-opt-style improvement,"dsj1000: valid 1/1, gap_vs_opt=10.677%, cost=2.0652e+07, runtime=1.653s, NA
+pr1002: valid 1/1, gap_vs_opt=21.012%, cost=313476, runtime=1.077s, NA
+d1291: valid 1/1, gap_vs_opt=16.124%, cost=58992, runtime=3.249s, NA",7008168.0,15.93772077991436,3,3,0,True,convex_hull_outside_in,Convex hull / outside-in insertion,6,1,3,True,compliant,Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family.,ConvexHullOutsideInImprovedV5,insertion_2opt,15.93772077991436,1.992835283279419
+27,27,tsp,permutation_tour,ImprovedConvexHullOutsideIn,insertion_2opt,d0d446b72e351609,True,True,3,3,15.57815670952933,15.57815670952933,2.741976579030355,26.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_027_d0d446b72e351609.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_027.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_027.txt,insertion construction with bounded 2-opt-style improvement,"dsj1000: valid 1/1, gap_vs_opt=10.607%, cost=2.06389e+07, runtime=1.514s, NA
+pr1002: valid 1/1, gap_vs_opt=20.766%, cost=312837, runtime=0.948s, NA
+d1291: valid 1/1, gap_vs_opt=15.362%, cost=58605, runtime=5.764s, NA",7003458.333333333,15.57815670952933,3,3,0,True,convex_hull_outside_in,Convex hull / outside-in insertion,7,1,3,True,compliant,Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family.,ImprovedConvexHullOutsideIn,insertion_2opt,15.57815670952933,2.741976579030355
+28,28,tsp,permutation_tour,ImprovedConvexHullOutsideInV2,insertion_2opt,78122e88e1ed5031,True,True,3,3,15.57815670952933,15.57815670952933,3.740241448084513,27.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_028_78122e88e1ed5031.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_028.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_028.txt,insertion construction with bounded 2-opt-style improvement,"dsj1000: valid 1/1, gap_vs_opt=10.607%, cost=2.06389e+07, runtime=2.730s, NA
+pr1002: valid 1/1, gap_vs_opt=20.766%, cost=312837, runtime=1.628s, NA
+d1291: valid 1/1, gap_vs_opt=15.362%, cost=58605, runtime=6.863s, NA",7003458.333333333,15.57815670952933,3,3,0,True,convex_hull_outside_in,Convex hull / outside-in insertion,8,1,3,True,compliant,Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family.,ImprovedConvexHullOutsideInV2,insertion_2opt,15.57815670952933,3.740241448084513
+29,29,tsp,permutation_tour,ImprovedConvexHullOutsideInV3,insertion_2opt,41ec63767f83ff83,True,True,3,3,15.25641353422401,15.25641353422401,6.736945867538452,27.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_029_41ec63767f83ff83.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_029.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_029.txt,insertion construction with bounded 2-opt-style improvement,"dsj1000: valid 1/1, gap_vs_opt=10.355%, cost=2.05918e+07, runtime=4.520s, NA
+pr1002: valid 1/1, gap_vs_opt=20.295%, cost=311618, runtime=2.176s, NA
+d1291: valid 1/1, gap_vs_opt=15.120%, cost=58482, runtime=13.515s, NA",6987303.666666667,15.25641353422401,3,3,0,True,convex_hull_outside_in,Convex hull / outside-in insertion,9,1,3,True,compliant,Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family.,ImprovedConvexHullOutsideInV3,insertion_2opt,15.25641353422401,6.736945867538452
+30,30,tsp,permutation_tour,ConvexHullOutsideInV4,insertion_2opt,4fcfeb2bf03bdefc,True,True,3,3,14.68664465266913,14.68664465266913,11.649945974349976,29.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_030_4fcfeb2bf03bdefc.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_030.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_030.txt,insertion construction with bounded 2-opt-style improvement,"dsj1000: valid 1/1, gap_vs_opt=9.782%, cost=2.0485e+07, runtime=10.180s, NA
+pr1002: valid 1/1, gap_vs_opt=19.794%, cost=310320, runtime=4.092s, NA
+d1291: valid 1/1, gap_vs_opt=14.484%, cost=58159, runtime=20.678s, NA",6951159.333333333,14.68664465266913,3,3,0,True,convex_hull_outside_in,Convex hull / outside-in insertion,10,1,3,True,compliant,Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family.,ConvexHullOutsideInV4,insertion_2opt,14.68664465266913,11.649945974349976
+31,31,tsp,permutation_tour,ConvexHullOutsideInV5,insertion_2opt,3a63d5c4642b77c8,True,True,3,3,13.490276679290519,13.490276679290519,25.537418762842815,30.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_031_3a63d5c4642b77c8.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_031.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_031.txt,insertion construction with bounded 2-opt-style improvement,"dsj1000: valid 1/1, gap_vs_opt=9.132%, cost=2.03636e+07, runtime=20.294s, NA
+pr1002: valid 1/1, gap_vs_opt=19.060%, cost=308419, runtime=12.218s, NA
+d1291: valid 1/1, gap_vs_opt=12.279%, cost=57039, runtime=44.101s, NA",6909687.333333333,13.490276679290519,3,3,0,True,convex_hull_outside_in,Convex hull / outside-in insertion,11,1,3,True,compliant,Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family.,ConvexHullOutsideInV5,insertion_2opt,13.490276679290519,25.537418762842815
+32,32,tsp,permutation_tour,ConvexHullOutsideInV6,insertion_2opt,add0c9fe3746d5df,True,False,1,3,16.406415873689898,416.4064158736899,42.0067081451416,31.0,1+1,mutate_parent,partial_validity: 1/3 valid,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_032_add0c9fe3746d5df.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_032.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_032.txt,insertion construction with bounded 2-opt-style improvement,"dsj1000: valid 0/1, errors=candidate timed out after 60.0s
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+pr1002: valid 1/1, gap_vs_opt=16.406%, cost=301545, runtime=42.007s, NA
+d1291: valid 0/1, errors=candidate timed out after 60.0s
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^",301545.0,16.406415873689898,1,3,2,True,convex_hull_outside_in,Convex hull / outside-in insertion,12,1,3,True,compliant,Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family.,ConvexHullOutsideInV6,insertion_2opt,16.406415873689898,42.0067081451416
+33,33,tsp,permutation_tour,ConvexHullOutsideInV7,insertion_2opt,5094aae81b03dfd5,True,False,1,3,16.406415873689898,416.4064158736899,41.6426522731781,31.0,1+1,mutate_parent,partial_validity: 1/3 valid,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_033_5094aae81b03dfd5.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_033.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_033.txt,insertion construction with bounded 2-opt-style improvement,"dsj1000: valid 0/1, errors=candidate timed out after 60.0s
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+pr1002: valid 1/1, gap_vs_opt=16.406%, cost=301545, runtime=41.643s, NA
+d1291: valid 0/1, errors=candidate timed out after 60.0s
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^",301545.0,16.406415873689898,1,3,2,True,convex_hull_outside_in,Convex hull / outside-in insertion,13,1,3,True,compliant,Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family.,ConvexHullOutsideInV7,insertion_2opt,16.406415873689898,41.6426522731781
+34,34,tsp,permutation_tour,ConvexHullOutsideInV8,insertion_2opt,5094aae81b03dfd5,False,False,0,3,,,,31.0,1+1,mutate_parent,duplicate_code,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_034_5094aae81b03dfd5.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_034.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_034.txt,insertion construction with bounded 2-opt-style improvement,,,,0,3,3,True,convex_hull_outside_in,Convex hull / outside-in insertion,14,1,3,True,compliant,Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family.,ConvexHullOutsideInV8,insertion_2opt,,
+35,35,tsp,permutation_tour,ConvexHullOutsideInV6,insertion_2opt,5094aae81b03dfd5,False,False,0,3,,,,31.0,1+1,mutate_parent,duplicate_code,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_035_5094aae81b03dfd5.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_035.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_035.txt,insertion construction with bounded 2-opt-style improvement,,,,0,3,3,True,convex_hull_outside_in,Convex hull / outside-in insertion,15,1,3,True,compliant,Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family.,ConvexHullOutsideInV6,insertion_2opt,,
+36,36,tsp,permutation_tour,ConvexHullOutsideInV6Improved,insertion_2opt,5094aae81b03dfd5,False,False,0,3,,,,31.0,1+1,mutate_parent,duplicate_code,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_036_5094aae81b03dfd5.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_036.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_036.txt,insertion construction with bounded 2-opt-style improvement,,,,0,3,3,True,convex_hull_outside_in,Convex hull / outside-in insertion,16,1,3,True,compliant,Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family.,ConvexHullOutsideInV6Improved,insertion_2opt,,
+37,37,tsp,permutation_tour,ConvexHullOutsideInV6Improved,insertion_2opt,5094aae81b03dfd5,False,False,0,3,,,,31.0,1+1,mutate_parent,duplicate_code,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_037_5094aae81b03dfd5.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_037.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_037.txt,insertion construction with bounded 2-opt-style improvement,,,,0,3,3,True,convex_hull_outside_in,Convex hull / outside-in insertion,17,1,3,True,compliant,Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family.,ConvexHullOutsideInV6Improved,insertion_2opt,,
+38,38,tsp,permutation_tour,ConvexHullOutsideInV6Improved,insertion_constructive,ac2e10cb993bb6fd,True,False,1,3,16.406415873689898,416.4064158736899,39.505186796188354,31.0,1+1,mutate_parent,partial_validity: 1/3 valid,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_038_ac2e10cb993bb6fd.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_038.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_038.txt,insertion constructive tour builder,"dsj1000: valid 0/1, errors=candidate timed out after 60.0s
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+pr1002: valid 1/1, gap_vs_opt=16.406%, cost=301545, runtime=39.505s, NA
+d1291: valid 0/1, errors=candidate timed out after 60.0s
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^",301545.0,16.406415873689898,1,3,2,True,convex_hull_outside_in,Convex hull / outside-in insertion,18,1,3,True,compliant,Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family.,ConvexHullOutsideInV6Improved,insertion_constructive,16.406415873689898,39.505186796188354
+39,39,tsp,permutation_tour,ConvexHullOutsideInV6Improved,insertion_2opt,5094aae81b03dfd5,False,False,0,3,,,,31.0,1+1,mutate_parent,duplicate_code,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_039_5094aae81b03dfd5.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_039.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_039.txt,insertion construction with bounded 2-opt-style improvement,,,,0,3,3,True,convex_hull_outside_in,Convex hull / outside-in insertion,19,1,3,True,compliant,Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family.,ConvexHullOutsideInV6Improved,insertion_2opt,,
+40,40,tsp,permutation_tour,ConvexHullOutsideInV6Improved,insertion_2opt,9cacd329e202a4fe,True,False,2,3,13.128954849807084,213.1289548498071,32.2638863325119,31.0,1+1,mutate_parent,partial_validity: 2/3 valid,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_040_9cacd329e202a4fe.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_040.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_040.txt,insertion construction with bounded 2-opt-style improvement,"dsj1000: valid 1/1, gap_vs_opt=8.573%, cost=2.02594e+07, runtime=40.438s, NA
+pr1002: valid 1/1, gap_vs_opt=17.685%, cost=304857, runtime=24.090s, NA
+d1291: valid 0/1, errors=candidate timed out after 60.0s
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^",10282115.5,13.128954849807084,2,3,1,True,convex_hull_outside_in,Convex hull / outside-in insertion,20,1,3,True,compliant,Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family.,ConvexHullOutsideInV6Improved,insertion_2opt,13.128954849807084,32.2638863325119
+41,41,tsp,permutation_tour,GridSectorDecompositionHeuristic,nearest_neighbor,2554659e4f93027b,False,False,0,3,,,,,1+1,initial,name 'hasattr' is not defined,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_041_2554659e4f93027b.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_041.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_041.txt,nearest-neighbor constructive tour builder,"dsj1000: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+pr1002: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+d1291: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^",,,0,3,3,True,grid_sector_decomposition,Grid / sector decomposition,1,2,3,False,partial,"Grid/sector structure appears, but nearest-neighbor, insertion, or 2-opt-style logic still seems important.",GridSectorDecompositionHeuristic,nearest_neighbor,,
+42,42,tsp,permutation_tour,Grid Sector Decomposition Heuristic,randomized_constructive,41ead7a66184684c,False,False,0,3,,,,41.0,1+1,redesign_invalid_parent,name 'hasattr' is not defined,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_042_41ead7a66184684c.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_042.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_042.txt,randomized constructive tour builder,"dsj1000: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+pr1002: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+d1291: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^",,,0,3,3,True,grid_sector_decomposition,Grid / sector decomposition,2,2,3,True,compliant,Grid/sector macro-order appears central to the construction.,Grid Sector Decomposition Heuristic,randomized_constructive,,
+43,43,tsp,permutation_tour,Grid Sector Decomposition Heuristic with Endpoint Bridging,nearest_neighbor,4ff0cd6018fa868f,False,False,0,3,,,,42.0,1+1,redesign_invalid_parent,name 'hasattr' is not defined,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_043_4ff0cd6018fa868f.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_043.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_043.txt,nearest-neighbor constructive tour builder,"dsj1000: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+pr1002: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+d1291: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^",,,0,3,3,True,grid_sector_decomposition,Grid / sector decomposition,3,2,3,False,partial,"Grid/sector structure appears, but nearest-neighbor, insertion, or 2-opt-style logic still seems important.",Grid Sector Decomposition Heuristic with Endpoint Bridging,nearest_neighbor,,
+44,44,tsp,permutation_tour,Grid Sector Decomposition Heuristic with Radial Ordering,randomized_constructive,6984ae9e29a30376,False,False,0,3,,,,43.0,1+1,redesign_invalid_parent,name 'hasattr' is not defined,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_044_6984ae9e29a30376.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_044.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_044.txt,randomized constructive tour builder,"dsj1000: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+pr1002: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+d1291: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^",,,0,3,3,True,grid_sector_decomposition,Grid / sector decomposition,4,2,3,True,compliant,Grid/sector macro-order appears central to the construction.,Grid Sector Decomposition Heuristic with Radial Ordering,randomized_constructive,,
+45,45,tsp,permutation_tour,Grid Sector Decomposition Heuristic with Snake-Like Ordering,randomized_constructive,e460fff1fca60e8b,False,False,0,3,,,,44.0,1+1,redesign_invalid_parent,name 'hasattr' is not defined,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_045_e460fff1fca60e8b.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_045.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_045.txt,randomized constructive tour builder,"dsj1000: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+pr1002: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+d1291: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^",,,0,3,3,True,grid_sector_decomposition,Grid / sector decomposition,5,2,3,True,compliant,Grid/sector macro-order appears central to the construction.,Grid Sector Decomposition Heuristic with Snake-Like Ordering,randomized_constructive,,
+46,46,tsp,permutation_tour,Grid Sector Decomposition with Snake-Like Ordering and Local Path Optimization,nearest_neighbor,8a26336b763a2d73,False,False,0,3,,,,45.0,1+1,redesign_invalid_parent,name 'hasattr' is not defined,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_046_8a26336b763a2d73.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_046.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_046.txt,nearest-neighbor constructive tour builder,"dsj1000: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+pr1002: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+d1291: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^",,,0,3,3,True,grid_sector_decomposition,Grid / sector decomposition,6,2,3,False,partial,"Grid/sector structure appears, but nearest-neighbor, insertion, or 2-opt-style logic still seems important.",Grid Sector Decomposition with Snake-Like Ordering and Local Path Optimization,nearest_neighbor,,
+47,47,tsp,permutation_tour,Grid Sector Decomposition with Radial Ordering and Local Path Optimization,nearest_neighbor,4a2587abbc600b54,False,False,0,3,,,,46.0,1+1,redesign_invalid_parent,name 'hasattr' is not defined,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_047_4a2587abbc600b54.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_047.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_047.txt,nearest-neighbor constructive tour builder,"dsj1000: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+pr1002: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+d1291: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^",,,0,3,3,True,grid_sector_decomposition,Grid / sector decomposition,7,2,3,False,partial,"Grid/sector structure appears, but nearest-neighbor, insertion, or 2-opt-style logic still seems important.",Grid Sector Decomposition with Radial Ordering and Local Path Optimization,nearest_neighbor,,
+48,48,tsp,permutation_tour,Grid Sector Decomposition with Sweep Ordering and Local Path Optimization,nearest_neighbor,3695a9bd1f49e09e,False,False,0,3,,,,47.0,1+1,redesign_invalid_parent,name 'hasattr' is not defined,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_048_3695a9bd1f49e09e.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_048.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_048.txt,nearest-neighbor constructive tour builder,"dsj1000: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+pr1002: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+d1291: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^",,,0,3,3,True,grid_sector_decomposition,Grid / sector decomposition,8,2,3,False,partial,"Grid/sector structure appears, but nearest-neighbor, insertion, or 2-opt-style logic still seems important.",Grid Sector Decomposition with Sweep Ordering and Local Path Optimization,nearest_neighbor,,
+49,49,tsp,permutation_tour,Grid Sector Decomposition with Radial Sweep Ordering,nearest_neighbor,fe980e8d6593e0d5,False,False,0,3,,,,48.0,1+1,redesign_invalid_parent,name 'hasattr' is not defined,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_049_fe980e8d6593e0d5.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_049.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_049.txt,nearest-neighbor constructive tour builder,"dsj1000: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+pr1002: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+d1291: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^",,,0,3,3,True,grid_sector_decomposition,Grid / sector decomposition,9,2,3,False,partial,"Grid/sector structure appears, but nearest-neighbor, insertion, or 2-opt-style logic still seems important.",Grid Sector Decomposition with Radial Sweep Ordering,nearest_neighbor,,
+50,50,tsp,permutation_tour,Grid Sector Decomposition with Snake-Like Ordering and Local Nearest Neighbor,nearest_neighbor,b52e40eb14d378d8,False,False,0,3,,,,49.0,1+1,redesign_invalid_parent,name 'hasattr' is not defined,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_050_b52e40eb14d378d8.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_050.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_050.txt,nearest-neighbor constructive tour builder,"dsj1000: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+pr1002: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+d1291: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^",,,0,3,3,True,grid_sector_decomposition,Grid / sector decomposition,10,2,3,False,partial,"Grid/sector structure appears, but nearest-neighbor, insertion, or 2-opt-style logic still seems important.",Grid Sector Decomposition with Snake-Like Ordering and Local Nearest Neighbor,nearest_neighbor,,
+51,51,tsp,permutation_tour,Radial Grid Sector Decomposition with Endpoint Bridging,nearest_neighbor,9506bf318e5ec9a5,False,False,0,3,,,,50.0,1+1,redesign_invalid_parent,name 'hasattr' is not defined,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_051_9506bf318e5ec9a5.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_051.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_051.txt,nearest-neighbor constructive tour builder,"dsj1000: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+pr1002: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+d1291: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^",,,0,3,3,True,grid_sector_decomposition,Grid / sector decomposition,11,2,3,False,partial,"Grid/sector structure appears, but nearest-neighbor, insertion, or 2-opt-style logic still seems important.",Radial Grid Sector Decomposition with Endpoint Bridging,nearest_neighbor,,
+52,52,tsp,permutation_tour,Grid Sector Decomposition with Local Path Construction,nearest_neighbor,5e229cf18de22306,False,False,0,3,,,,51.0,1+1,redesign_invalid_parent,name 'hasattr' is not defined,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_052_5e229cf18de22306.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_052.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_052.txt,nearest-neighbor constructive tour builder,"dsj1000: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+pr1002: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+d1291: valid 0/1, errors=name 'hasattr' is not defined
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^",,,0,3,3,True,grid_sector_decomposition,Grid / sector decomposition,12,2,3,False,partial,"Grid/sector structure appears, but nearest-neighbor, insertion, or 2-opt-style logic still seems important.",Grid Sector Decomposition with Local Path Construction,nearest_neighbor,,
+53,53,tsp,permutation_tour,Snake-Like Grid Decomposition with Local Nearest Neighbor,nearest_neighbor,e6a331404dc6f323,True,True,3,3,26.025418483018907,26.025418483018907,0.2592504819234212,52.0,1+1,redesign_invalid_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_053_e6a331404dc6f323.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_053.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_053.txt,nearest-neighbor constructive tour builder,"dsj1000: valid 1/1, gap_vs_opt=30.155%, cost=2.42865e+07, runtime=0.220s, NA
+pr1002: valid 1/1, gap_vs_opt=24.227%, cost=321803, runtime=0.210s, NA
+d1291: valid 1/1, gap_vs_opt=23.694%, cost=62838, runtime=0.348s, NA",8223729.333333333,26.025418483018907,3,3,0,True,grid_sector_decomposition,Grid / sector decomposition,13,2,3,False,partial,"Grid/sector structure appears, but nearest-neighbor, insertion, or 2-opt-style logic still seems important.",Snake-Like Grid Decomposition with Local Nearest Neighbor,nearest_neighbor,26.025418483018907,0.2592504819234212
+54,54,tsp,permutation_tour,Grid Sector Decomposition with Local Path Construction and Boundary Handling,nearest_neighbor,ef28f4b00051d7cd,False,False,0,3,,,,53.0,1+1,mutate_parent,list index out of range,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_054_ef28f4b00051d7cd.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_054.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_054.txt,nearest-neighbor constructive tour builder,"dsj1000: valid 0/1, errors=list index out of range
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+pr1002: valid 0/1, errors=list index out of range
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+d1291: valid 0/1, errors=list index out of range
+Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^",,,0,3,3,True,grid_sector_decomposition,Grid / sector decomposition,14,2,3,False,partial,"Grid/sector structure appears, but nearest-neighbor, insertion, or 2-opt-style logic still seems important.",Grid Sector Decomposition with Local Path Construction and Boundary Handling,nearest_neighbor,,
+55,55,tsp,permutation_tour,Radial Grid Sector Decomposition with Local Nearest Neighbor and Boundary Handling,nearest_neighbor,0eb5f17e46170f4c,True,True,3,3,666.2902578197458,666.2902578197458,0.002179702123006185,53.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_055_0eb5f17e46170f4c.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_055.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_055.txt,nearest-neighbor constructive tour builder,"dsj1000: valid 1/1, gap_vs_opt=546.994%, cost=1.20727e+08, runtime=0.002s, NA
+pr1002: valid 1/1, gap_vs_opt=553.508%, cost=1.69288e+06, runtime=0.002s, NA
+d1291: valid 1/1, gap_vs_opt=898.368%, cost=507181, runtime=0.002s, NA",40975718.333333336,666.2902578197458,3,3,0,True,grid_sector_decomposition,Grid / sector decomposition,15,2,3,False,partial,"Grid/sector structure appears, but nearest-neighbor, insertion, or 2-opt-style logic still seems important.",Radial Grid Sector Decomposition with Local Nearest Neighbor and Boundary Handling,nearest_neighbor,666.2902578197458,0.002179702123006185
+56,56,tsp,permutation_tour,Radial Grid Sector Decomposition with Local Path Construction and Endpoint Bridging,nearest_neighbor,11db4889874b5092,True,True,3,3,222.67186898782447,222.67186898782447,0.03556474049886068,53.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_056_11db4889874b5092.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_056.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_056.txt,nearest-neighbor constructive tour builder,"dsj1000: valid 1/1, gap_vs_opt=206.569%, cost=5.72048e+07, runtime=0.033s, NA
+pr1002: valid 1/1, gap_vs_opt=255.671%, cost=921348, runtime=0.031s, NA
+d1291: valid 1/1, gap_vs_opt=205.775%, cost=155337, runtime=0.042s, NA",19427174.666666668,222.67186898782447,3,3,0,True,grid_sector_decomposition,Grid / sector decomposition,16,2,3,False,partial,"Grid/sector structure appears, but nearest-neighbor, insertion, or 2-opt-style logic still seems important.",Radial Grid Sector Decomposition with Local Path Construction and Endpoint Bridging,nearest_neighbor,222.67186898782447,0.03556474049886068
+57,57,tsp,permutation_tour,Grid Sector Decomposition with Radial Ordering and Local Path Construction,nearest_neighbor,95f2a8110f81e134,True,True,3,3,30.299039719692065,30.299039719692065,0.8024681409200033,53.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_057_95f2a8110f81e134.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_057.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_057.txt,nearest-neighbor constructive tour builder,"dsj1000: valid 1/1, gap_vs_opt=34.138%, cost=2.50297e+07, runtime=0.657s, NA
+pr1002: valid 1/1, gap_vs_opt=28.040%, cost=331680, runtime=0.673s, NA
+d1291: valid 1/1, gap_vs_opt=28.720%, cost=65391, runtime=1.078s, NA",8475581.333333334,30.299039719692065,3,3,0,True,grid_sector_decomposition,Grid / sector decomposition,17,2,3,False,partial,"Grid/sector structure appears, but nearest-neighbor, insertion, or 2-opt-style logic still seems important.",Grid Sector Decomposition with Radial Ordering and Local Path Construction,nearest_neighbor,30.299039719692065,0.8024681409200033
+58,58,tsp,permutation_tour,Snake-Like Grid Decomposition with Local Nearest Neighbor and Endpoint Bridging,nearest_neighbor,7aa21252d4b8c4e3,True,True,3,3,26.650987172003656,26.650987172003656,0.42326895395914715,53.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_058_7aa21252d4b8c4e3.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_058.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_058.txt,nearest-neighbor constructive tour builder,"dsj1000: valid 1/1, gap_vs_opt=26.427%, cost=2.35908e+07, runtime=0.347s, NA
+pr1002: valid 1/1, gap_vs_opt=31.015%, cost=339388, runtime=0.358s, NA
+d1291: valid 1/1, gap_vs_opt=22.511%, cost=62237, runtime=0.565s, NA",7997473.0,26.650987172003656,3,3,0,True,grid_sector_decomposition,Grid / sector decomposition,18,2,3,False,partial,"Grid/sector structure appears, but nearest-neighbor, insertion, or 2-opt-style logic still seems important.",Snake-Like Grid Decomposition with Local Nearest Neighbor and Endpoint Bridging,nearest_neighbor,26.650987172003656,0.42326895395914715
+59,59,tsp,permutation_tour,Grid Sector Decomposition with Radial Ordering and Local Nearest Neighbor,nearest_neighbor,dc312d8d69413f98,True,True,3,3,666.5456292383241,666.5456292383241,0.00274809201558431,53.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_059_dc312d8d69413f98.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_059.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_059.txt,nearest-neighbor constructive tour builder,"dsj1000: valid 1/1, gap_vs_opt=546.462%, cost=1.20628e+08, runtime=0.003s, NA
+pr1002: valid 1/1, gap_vs_opt=552.252%, cost=1.68963e+06, runtime=0.002s, NA
+d1291: valid 1/1, gap_vs_opt=900.923%, cost=508479, runtime=0.003s, NA",40941950.333333336,666.5456292383241,3,3,0,True,grid_sector_decomposition,Grid / sector decomposition,19,2,3,False,partial,"Grid/sector structure appears, but nearest-neighbor, insertion, or 2-opt-style logic still seems important.",Grid Sector Decomposition with Radial Ordering and Local Nearest Neighbor,nearest_neighbor,666.5456292383241,0.00274809201558431
+60,60,tsp,permutation_tour,Radial Grid Sector Decomposition with Local Nearest Neighbor and Boundary Handling,nearest_neighbor,ef46040b4d358092,True,True,3,3,29.171099972876338,29.171099972876338,0.22603750228881836,53.0,1+1,mutate_parent,,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/codes/iter_060_ef46040b4d358092.py,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/raw_responses/raw_iter_060.txt,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_family_focus_3families_raw_train_20260525_095803/prompts/prompt_iter_060.txt,nearest-neighbor constructive tour builder,"dsj1000: valid 1/1, gap_vs_opt=30.130%, cost=2.42818e+07, runtime=0.198s, NA
+pr1002: valid 1/1, gap_vs_opt=32.126%, cost=342266, runtime=0.180s, NA
+d1291: valid 1/1, gap_vs_opt=25.257%, cost=63632, runtime=0.300s, NA",8229240.333333333,29.171099972876338,3,3,0,True,grid_sector_decomposition,Grid / sector decomposition,20,2,3,False,partial,"Grid/sector structure appears, but nearest-neighbor, insertion, or 2-opt-style logic still seems important.",Radial Grid Sector Decomposition with Local Nearest Neighbor and Boundary Handling,nearest_neighbor,29.171099972876338,0.22603750228881836

@@ -1,0 +1,179 @@
+Your task is to design a novel heuristic algorithm for the following TSP optimization problem.
+
+Active objective: Traveling Salesman Problem / permutation tour construction.
+Problem:
+Given a TSPLIB instance with n cities, return one Hamiltonian tour as a permutation of city indices.
+The evaluator closes the tour automatically by adding the edge from the last city back to the first city.
+Do not append the start city at the end of the returned tour.
+
+Official evaluation objective:
+Minimize total tour length. If an optimum is available, the evaluator reports the percentage gap versus the known optimum.
+
+Problem object seen by your code:
+- problem.n: number of cities.
+- problem.edge_cost(i, j): true TSPLIB edge-cost query for one edge at a time.
+- problem.coords: city coordinates as a numpy array when available.
+The full dense distance matrix is not part of the public interface; use bounded edge_cost queries.
+
+Interface:
+The generated Python code must define exactly one class named TSPHeuristic:
+
+class TSPHeuristic:
+    def __call__(self, problem, rng=None):
+        ...
+
+The evaluator will call:
+
+algo = TSPHeuristic()
+tour = algo(problem, rng)
+
+Inputs:
+- problem is a TSP problem object exposing the interface described above.
+- rng is an optional numpy.random.Generator.
+
+Output:
+- Return exactly n city indices as an array-like permutation of 0..problem.n-1.
+- Each city must appear exactly once.
+- Do not append the first city at the end; the evaluator closes the tour itself.
+- The algorithm must be self-contained and executable with numpy/math available.
+
+STRICT CONSTRUCTIVE-ONLY MODE IS ACTIVE.
+
+The generated heuristic must be a pure constructive TSP heuristic.
+It must build one valid Hamiltonian tour and return it directly.
+All decisions must be part of the construction process itself.
+
+Strictly forbidden:
+- no 2-opt, two-opt, 3-opt, k-opt, Lin-Kernighan, LK, or LKH-style improvement;
+- no local search, neighborhood search, edge-exchange, segment-reversal improvement, relocate, swap, Or-opt, or variable-depth exchange;
+- no post-construction cleanup, refinement, repair-by-optimization, improve_tour, optimize_tour, polish, or final improvement pass after a complete tour has been built;
+- no loop that repeatedly scans a completed tour looking for improving moves.
+
+You may maintain feasibility during construction, for example by tracking visited cities, preventing duplicates, and choosing a different next city when a candidate would break the permutation. But once the tour has been constructed, return it without any optimization phase.
+This strict constructive-only block overrides any parent, history, family-focus, or novelty instruction that suggests adding a cleanup or local-search phase.
+
+Rules:
+- You may use numpy as np, math, lists, dictionaries, sets, and bounded loops.
+- Do not import or call sklearn, scipy, pandas, joblib, numba, torch, tensorflow, jax, networkx, OR-Tools, LKH, Concorde, tsplib libraries, multiprocessing, threading, or external optimization libraries.
+- Do not read/write files.
+- Do not use global hidden state.
+- Keep the method scalable for n around 1000 to 1800 cities.
+- Avoid cubic or unbounded all-pairs local search.
+- When drawing an index, use rng.integers(problem.n) or rng.integers(0, problem.n); do not use rng.randint.
+
+Objective separation:
+The official evaluator computes the tour cost and gap outside your code after your algorithm returns a tour.
+No hidden evaluator-side local search, 2-opt, repair, or post-processing is applied beyond validation.
+Do not hard-code any instance names, coordinates, optima, reference values, or file paths.
+
+Diversity/novelty:
+Do not merely rename the previous algorithm or only tune constants.
+Prefer meaningful structural changes when redesigning, while still optimizing the active TSP objective.
+
+Return format:
+# Name:
+
+# Code:
+```python
+# your code here
+```
+
+Previously generated heuristics for this active objective:
+iter=1 | Nearest Neighbor Heuristic with Random Start | valid | family=nearest_neighbor | search_gap=27.310737993219192 | selection_score=27.310737993219192 | error=
+iter=2 | Modified Nearest Neighbor Heuristic with Adaptive Starting City | invalid/partial | family=nearest_neighbor | search_gap=None | selection_score=None | error=name 'hasattr' is not defined
+iter=3 | Nearest Neighbor Heuristic with Random Start and Adaptive Edge Weight | valid | family=nearest_neighbor | search_gap=33.43423926164616 | selection_score=33.43423926164616 | error=
+iter=4 | Adaptive Nearest Neighbor Heuristic with Random Start and Distance-Based Probability | valid | family=nearest_neighbor | search_gap=1705.8363995380205 | selection_score=1705.8363995380205 | error=
+iter=5 | Adaptive Nearest Neighbor Heuristic with Weighted Edge Costs and Random Start | valid | family=nearest_neighbor | search_gap=1727.802539327108 | selection_score=1727.802539327108 | error=
+iter=6 | Improved Nearest Neighbor Heuristic with Adaptive Starting City and Weighted Edge Costs | valid | family=nearest_neighbor | search_gap=1039.5844293325536 | selection_score=1039.5844293325536 | error=
+
+
+
+
+
+Selection mode: 1+1 elitist improvement.
+The selected parent below is the current best-so-far full-valid heuristic under the active objective. Your goal is to improve on this parent while preserving useful mechanisms, keeping the class valid and scalable, and avoiding changes that only add complexity without lowering the score.
+
+Selected parent summary:
+```json
+{
+  "objective_mode": "tsp",
+  "center_constraint": "permutation_tour",
+  "selection_strategy": "1+1",
+  "selection_strategy_raw": "1+1",
+  "parent_selection_reason": "best_full_valid_1plus1",
+  "iteration": 1,
+  "name": "Nearest Neighbor Heuristic with Random Start",
+  "family_sig": "nearest_neighbor",
+  "family_desc": "nearest-neighbor constructive tour builder",
+  "family_focus_active": false,
+  "focus_family_id": null,
+  "focus_family_name": null,
+  "family_focus_compliant": null,
+  "family_focus_compliance_level": "not_applicable",
+  "family_focus_mismatch_reason": "",
+  "valid": true,
+  "full_valid": true,
+  "selection_score": 27.310737993219192,
+  "search_gap_ref_mean_pct": 27.310737993219192,
+  "search_gap_ref_mean": 27.310737993219192,
+  "search_cost_mean": 8164455.333333333,
+  "search_gap_opt_mean_pct": 27.310737993219192,
+  "search_runtime_mean_s": 1.3800759315490723,
+  "probe_valid": null,
+  "probe_gap_ref_mean_pct": null,
+  "valid_instances": 3,
+  "total_instances": 3,
+  "partial_valid_cases": 3,
+  "partial_total_cases": 3,
+  "partial_failed_cases": 0,
+  "feedback_by_instance": "dsj1000: valid 1/1, gap_vs_opt=29.153%, cost=2.40995e+07, runtime=0.994s, NA\npr1002: valid 1/1, gap_vs_opt=27.471%, cost=330207, runtime=1.247s, NA\nd1291: valid 1/1, gap_vs_opt=25.309%, cost=63658, runtime=1.899s, NA",
+  "feedback_by_p": "dsj1000: valid 1/1, gap_vs_opt=29.153%, cost=2.40995e+07, runtime=0.994s, NA\npr1002: valid 1/1, gap_vs_opt=27.471%, cost=330207, runtime=1.247s, NA\nd1291: valid 1/1, gap_vs_opt=25.309%, cost=63658, runtime=1.899s, NA",
+  "probe_feedback_by_p": "",
+  "error": "",
+  "parent_timed_out": false,
+  "full_valid_exists": true,
+  "invalid_redesign_mode": false
+}
+```
+
+
+Selected parent full code:
+```python
+import numpy as np
+
+class TSPHeuristic:
+    def __call__(self, problem, rng=None):
+        if rng is None:
+            rng = np.random.default_rng()
+        
+        # Choose a random starting city
+        current_city = rng.integers(problem.n)
+        
+        # Initialize the tour
+        tour = [current_city]
+        
+        # Initialize the set of unvisited cities
+        unvisited_cities = set(range(problem.n))
+        unvisited_cities.remove(current_city)
+        
+        # Construct the tour
+        while unvisited_cities:
+            # Find the nearest unvisited city
+            nearest_city = min(unvisited_cities, key=lambda city: problem.edge_cost(current_city, city))
+            
+            # Add the nearest city to the tour
+            tour.append(nearest_city)
+            
+            # Update the current city and unvisited cities
+            current_city = nearest_city
+            unvisited_cities.remove(current_city)
+        
+        return np.array(tour)
+```
+
+Repair, modify, or redesign the heuristic to improve the active objective.
+Use the score, runtime, error feedback, and instance-level feedback above.
+If the parent failed on an instance, fix that issue.
+If the parent was valid, try to lower the mean cost / mean gap versus the active reference.
+Keep the generated code class-based, self-contained, and compatible with the TSPHeuristic interface.
+Return the answer in the required # Name / # Code format.
