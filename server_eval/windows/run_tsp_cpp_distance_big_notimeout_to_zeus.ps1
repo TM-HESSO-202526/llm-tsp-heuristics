@@ -299,7 +299,9 @@ $remoteScript = $remoteScript.Replace("__GIT_PULL__", $GIT_PULL_BASH)
 $remoteScript = $remoteScript.Replace("__DRY_RUN__", $DRY_RUN_BASH)
 
 $tmp = Join-Path $env:TEMP "run_tsp_cpp_distance_big_notimeout_zeus.sh"
-$remoteScript | Set-Content -Encoding UTF8 -Path $tmp
+$remoteScript = $remoteScript -replace "`r`n", "`n"
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText($tmp, $remoteScript, $utf8NoBom)
 scp "$tmp" "${REMOTE}:/tmp/tsp_cpp_big_launcher/run_tsp_cpp_distance_big_notimeout_zeus.sh"
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 ssh $REMOTE "bash /tmp/tsp_cpp_big_launcher/run_tsp_cpp_distance_big_notimeout_zeus.sh"
