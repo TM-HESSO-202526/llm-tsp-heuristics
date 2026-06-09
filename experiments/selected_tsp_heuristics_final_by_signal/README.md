@@ -20,3 +20,4 @@ Each heuristic folder contains:
 - `INFO.txt`,
 - `source_row.json`,
 - available search/detail CSVs when present.
+Additional candidate-list diagnostic: `candidate_list/02_candidate_mnnls_cr_105250_iter005/` contains the actual LLM-generated iter005 MNNLS-CR heuristic. The dedicated C++ launcher logs candidate-list use vs full-distance fallback counts.

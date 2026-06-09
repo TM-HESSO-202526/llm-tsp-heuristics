@@ -1,0 +1,14 @@
+{
+  "report_id": "C1b",
+  "selection_folder": "02_candidate_mnnls_cr_105250_iter005",
+  "source_run": "tsp_llamea_popmusic_train_20260520_105250",
+  "attempt": 5,
+  "iteration": 5,
+  "code_hash": "d41c0705c632564f",
+  "llm_name": "Modified Nearest Neighbor with Local Search and Candidate Restriction (MNNLS-CR)",
+  "source_code_in_logs": "TM/llm-tsp-runs/tsp_llamea_popmusic_train_20260520_105250/codes/iter_005_d41c0705c632564f.py",
+  "train_mean_gap_percent": 26.291348150684772,
+  "train_mean_runtime_s": 0.04528625806172689,
+  "mechanism": "candidate-list nearest-neighbour with closest full-distance fallback and bounded random segment-reversal repair",
+  "direct_translation_note": "The C++ method C1b_candidate_iter005_mnnls_cr directly translates the Python code without changing the mechanism. The added counters only instrument which branch was taken and how many repair attempts were accepted."
+}

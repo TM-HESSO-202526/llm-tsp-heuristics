@@ -98,6 +98,14 @@ struct RNG { mt19937_64 gen; explicit RNG(uint64_t seed): gen(seed) {} int randi
 using CandidateMap = vector<vector<int>>;
 using PriorRows = vector<unordered_map<int,double>>;
 
+struct EvalStats {
+    long long construct_candidate_moves = -1;
+    long long construct_fallback_moves = -1;
+    long long construct_total_moves = -1;
+    long long repair_attempts = -1;
+    long long repair_accepted = -1;
+};
+
 static fs::path first_existing(const vector<fs::path>& c){ for(auto&p:c) if(fs::exists(p)) return p; return fs::path(); }
 
 static CandidateMap normalize_candidates(vector<vector<int>> raw, const Instance& inst, int max_k){
@@ -232,6 +240,91 @@ static vector<int> H_C1_candidate_nn(const Instance& inst, const CandidateMap& c
     return tour;
 }
 
+
+static vector<int> H_C1b_candidate_iter005_mnnls_cr(const Instance& inst, const CandidateMap& cand, RNG& rng, const Deadline& dl, EvalStats* stats){
+    // Direct C++ translation of actual LLM log candidate:
+    // TM/llm-tsp-runs/tsp_llamea_popmusic_train_20260520_105250/codes/iter_005_d41c0705c632564f.py
+    // Name in logs: Modified Nearest Neighbor with Local Search and Candidate Restriction (MNNLS-CR)
+    // Mechanism preserved exactly: random start; candidate-list closest unvisited neighbor;
+    // closest full-distance fallback when the candidate list is exhausted; n random segment-reversal
+    // improvement attempts accepted only if they shorten the tour. Counters below are instrumentation only.
+    int n=(int)inst.p.size();
+    if(stats){
+        stats->construct_candidate_moves = 0;
+        stats->construct_fallback_moves = 0;
+        stats->construct_total_moves = 0;
+        stats->repair_attempts = 0;
+        stats->repair_accepted = 0;
+    }
+
+    int current_city = rng.randint(n);
+    vector<int> tour; tour.reserve(n);
+    vector<char> visited(n,0);
+    tour.push_back(current_city);
+    visited[current_city]=1;
+
+    for(int step=0; step<n-1; ++step){
+        dl.check();
+        int next_city = -1;
+        long long best_cost = numeric_limits<long long>::max();
+
+        // unvisited_neighbors = [neighbor for neighbor in problem.neighbors(current_city) if neighbor not in visited]
+        for(int neighbor: cand[current_city]){
+            if(!visited[neighbor]){
+                long long c = edge_cost(inst, current_city, neighbor); // direct counterpart of problem.edge_cost
+                if(c < best_cost){ best_cost = c; next_city = neighbor; }
+            }
+        }
+
+        if(next_city < 0){
+            // Direct counterpart of the generated fallback:
+            // unvisited_cities = [city for city in range(problem.n) if city not in visited]
+            // costs = [problem.full_edge_cost(current_city, city) for city in unvisited_cities]
+            // next_city = unvisited_cities[np.argmin(costs)]
+            if(stats) stats->construct_fallback_moves++;
+            for(int city=0; city<n; ++city){
+                if((city&16383)==0) dl.check();
+                if(!visited[city]){
+                    long long c = edge_cost(inst, current_city, city); // full distance in this C++ evaluator
+                    if(c < best_cost){ best_cost = c; next_city = city; }
+                }
+            }
+        } else {
+            if(stats) stats->construct_candidate_moves++;
+        }
+        if(stats) stats->construct_total_moves++;
+
+        if(next_city < 0) throw runtime_error("C1b iter005 construction failed");
+        tour.push_back(next_city);
+        visited[next_city]=1;
+        current_city=next_city;
+    }
+
+    // Direct translation of:
+    // for _ in range(problem.n):
+    //     i = rng.integers(problem.n - 1); j = rng.integers(problem.n - 1)
+    //     if i > j: i, j = j, i
+    //     edge1 = full_edge_cost(tour[i], tour[i+1]); edge2 = full_edge_cost(tour[j], tour[j+1])
+    //     edge3 = full_edge_cost(tour[i], tour[j+1]); edge4 = full_edge_cost(tour[j], tour[i+1])
+    //     if edge3 + edge4 < edge1 + edge2: reverse tour[i+1:j+1]
+    for(int a=0; a<n; ++a){
+        dl.check();
+        if(stats) stats->repair_attempts++;
+        int i = rng.randint(n-1);
+        int j = rng.randint(n-1);
+        if(i > j) swap(i,j);
+        long long edge1 = edge_cost(inst, tour[i], tour[i+1]);
+        long long edge2 = edge_cost(inst, tour[j], tour[j+1]);
+        long long edge3 = edge_cost(inst, tour[i], tour[j+1]);
+        long long edge4 = edge_cost(inst, tour[j], tour[i+1]);
+        if(edge3 + edge4 < edge1 + edge2){
+            reverse(tour.begin()+i+1, tour.begin()+j+1);
+            if(stats) stats->repair_accepted++;
+        }
+    }
+    return tour;
+}
+
 static vector<int> H_C1a_candidate_cleanup(const Instance& inst, const CandidateMap& cand, RNG& rng, const Deadline& dl){
     int n=(int)inst.p.size();
     vector<int> tour = nearest_neighbor_from_candidates(inst, cand, rng.randint(n), dl);
@@ -318,10 +411,11 @@ static vector<int> H_P3_fast_prior_lookahead(const Instance& inst, const PriorRo
     return tour;
 }
 
-static vector<int> method_tour(const string& method, const Instance& inst, const CandidateMap* cand, const PriorRows* pr, uint64_t seed, double timeout_s){
+static vector<int> method_tour(const string& method, const Instance& inst, const CandidateMap* cand, const PriorRows* pr, uint64_t seed, double timeout_s, EvalStats* stats=nullptr){
     Deadline dl(timeout_s); RNG rng(seed); int n=(int)inst.p.size();
     if(method=="C1_candidate_nn_constructive") { if(!cand) throw runtime_error("C1 requires candidates"); return H_C1_candidate_nn(inst,*cand,rng,dl); }
     if(method=="C1a_candidate_cleanup") { if(!cand) throw runtime_error("C1a requires candidates"); return H_C1a_candidate_cleanup(inst,*cand,rng,dl); }
+    if(method=="C1b_candidate_iter005_mnnls_cr") { if(!cand) throw runtime_error("C1b requires candidates"); return H_C1b_candidate_iter005_mnnls_cr(inst,*cand,rng,dl,stats); }
     if(method=="P1_quality_prior") { if(!pr) throw runtime_error("P1 requires prior"); return H_P1_quality_prior(inst,*pr,rng,dl); }
     if(method=="P2_prior_dominant") { if(!pr) throw runtime_error("P2 requires prior"); return H_P2_prior_dominant(inst,*pr,(int)(seed%n),dl); }
     if(method=="P3_fast_prior_lookahead") { if(!pr) throw runtime_error("P3 requires prior"); return H_P3_fast_prior_lookahead(inst,*pr,(int)(seed%n),dl); }
@@ -339,24 +433,31 @@ int main(int argc, char** argv){
     vector<OptRow> opt=read_opt_csv(opt_csv); vector<Instance> instances;
     for(auto&r:opt){ if(!wanted.empty() && !contains(wanted,r.instance)) continue; instances.push_back(read_tsp(find_tsp(inst_root,r.instance),r.instance,r.split,r.opt)); }
     fs::path raw=out_dir/"raw_results.csv"; bool exists=fs::exists(raw); ofstream csv(raw,ios::app);
-    if(!exists) csv << "signal_category,heuristic_id,heuristic_label,code_path,instance_name,split,n,rep,seed,objective_value,reference_value,gap_ref_pct,runtime_s,status,error_type,error_message,candidate_edge_count,total_edges,candidate_edge_share,hostname\n";
+    if(!exists) csv << "signal_category,heuristic_id,heuristic_label,code_path,instance_name,split,n,rep,seed,objective_value,reference_value,gap_ref_pct,runtime_s,status,error_type,error_message,construct_candidate_moves,construct_fallback_moves,construct_total_moves,construct_candidate_move_share,construct_fallback_move_share,repair_attempts,repair_accepted,candidate_edge_count,total_edges,candidate_edge_share,hostname\n";
     char host[256]; gethostname(host,sizeof(host));
     unordered_map<string,CandidateMap> cand_cache; unordered_map<string,PriorRows> prior_cache;
     for(int rep=1;rep<=reps;rep++){
         for(const auto &inst: instances){
             uint64_t seed=global_seed + rep*1000003ULL + hash<string>{}(inst.name) + hash<string>{}(method);
-            auto t0=chrono::steady_clock::now(); string status="ok", et="", em=""; double obj=numeric_limits<double>::quiet_NaN(), gap=numeric_limits<double>::quiet_NaN(); int cand_edges=-1,total_edges=-1; double cand_share=numeric_limits<double>::quiet_NaN();
+            auto t0=chrono::steady_clock::now(); string status="ok", et="", em=""; double obj=numeric_limits<double>::quiet_NaN(), gap=numeric_limits<double>::quiet_NaN(); int cand_edges=-1,total_edges=-1; double cand_share=numeric_limits<double>::quiet_NaN(); EvalStats stats;
             try{
                 CandidateMap *cand=nullptr; PriorRows *pr=nullptr;
                 if(signal=="candidate_list") { if(!cand_cache.count(inst.name)) cand_cache[inst.name]=read_candidates(cand_root,inst,max_candidates); cand=&cand_cache[inst.name]; }
                 if(signal=="edge_prior") { if(!prior_cache.count(inst.name)) prior_cache[inst.name]=read_prior_rows(prior_root,inst); pr=&prior_cache[inst.name]; }
-                auto tour=method_tour(method,inst,cand,pr,seed,timeout_s); validate_tour(tour,(int)inst.p.size()); obj=tour_cost(inst,tour); gap=100.0*(obj-inst.opt)/inst.opt;
+                auto tour=method_tour(method,inst,cand,pr,seed,timeout_s,&stats); validate_tour(tour,(int)inst.p.size()); obj=tour_cost(inst,tour); gap=100.0*(obj-inst.opt)/inst.opt;
                 if(cand){ total_edges=(int)tour.size(); cand_edges=0; for(int i=0;i<total_edges;i++){ int a=tour[i], b=tour[(i+1)%total_edges]; if(find((*cand)[a].begin(), (*cand)[a].end(), b)!=(*cand)[a].end()) cand_edges++; } cand_share=(double)cand_edges/(double)total_edges; }
             } catch(const exception& e){ string msg=e.what(); if(msg.find("timeout")!=string::npos){status="timeout";et="Timeout";} else {status="error";et="RuntimeError";} em=msg; }
             double rt=chrono::duration<double>(chrono::steady_clock::now()-t0).count();
             csv << csv_escape(signal) << "," << csv_escape(job) << "," << csv_escape(method) << ",server_eval/tsp_cpp_signal_eval.cpp," << csv_escape(inst.name) << "," << csv_escape(inst.split) << "," << inst.p.size() << "," << rep << "," << seed << ",";
             if(isfinite(obj)) csv << fixed << setprecision(6) << obj; csv << "," << fixed << setprecision(6) << inst.opt << ","; if(isfinite(gap)) csv << fixed << setprecision(9) << gap;
             csv << "," << fixed << setprecision(6) << rt << "," << status << "," << et << "," << csv_escape(em) << ",";
+            if(stats.construct_candidate_moves>=0) csv << stats.construct_candidate_moves; csv << ",";
+            if(stats.construct_fallback_moves>=0) csv << stats.construct_fallback_moves; csv << ",";
+            if(stats.construct_total_moves>=0) csv << stats.construct_total_moves; csv << ",";
+            if(stats.construct_total_moves>0) csv << fixed << setprecision(9) << ((double)stats.construct_candidate_moves/(double)stats.construct_total_moves); csv << ",";
+            if(stats.construct_total_moves>0) csv << fixed << setprecision(9) << ((double)stats.construct_fallback_moves/(double)stats.construct_total_moves); csv << ",";
+            if(stats.repair_attempts>=0) csv << stats.repair_attempts; csv << ",";
+            if(stats.repair_accepted>=0) csv << stats.repair_accepted; csv << ",";
             if(cand_edges>=0) csv << cand_edges; csv << ","; if(total_edges>=0) csv << total_edges; csv << ","; if(isfinite(cand_share)) csv << fixed << setprecision(9) << cand_share; csv << "," << host << "\n"; csv.flush();
         }
     }

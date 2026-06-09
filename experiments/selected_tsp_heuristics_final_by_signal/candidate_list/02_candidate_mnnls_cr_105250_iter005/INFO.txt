@@ -1,0 +1,22 @@
+C1b / iter005 candidate-list heuristic recovered from actual LLM logs
+=====================================================================
+
+Source run: tsp_llamea_popmusic_train_20260520_105250
+Iteration/attempt: 005
+Code hash: d41c0705c632564f
+Original log source: TM/llm-tsp-runs/tsp_llamea_popmusic_train_20260520_105250/codes/iter_005_d41c0705c632564f.py
+LLM name: Modified Nearest Neighbor with Local Search and Candidate Restriction (MNNLS-CR)
+Train mean gap: 26.291348151%
+Train mean runtime: 0.045286258 s
+
+Mechanism, kept exactly:
+- start from a random city;
+- at each construction step, read problem.neighbors(current_city);
+- if unvisited candidate-list neighbors exist, choose the one minimizing problem.edge_cost;
+- otherwise, scan all unvisited cities and choose the one minimizing problem.full_edge_cost;
+- after construction, perform problem.n random segment-reversal attempts and accept only improving reversals.
+
+The C++ direct translation adds counters only for instrumentation:
+construct_candidate_moves, construct_fallback_moves, construct_total_moves,
+construct_candidate_move_share, construct_fallback_move_share,
+repair_attempts, repair_accepted, final candidate-edge share.
