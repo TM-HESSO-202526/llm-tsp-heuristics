@@ -20,4 +20,7 @@ Each heuristic folder contains:
 - `INFO.txt`,
 - `source_row.json`,
 - available search/detail CSVs when present.
+
+Appendix exploratory TSP family cards: distance-only folders `14_D10_cluster_decomposition_local_tours/`, `15_D11_spectral_projection_partitioning/`, and `16_D12_sparse_geometric_graph_attempt_failed/` store the source code used for the D10--D12 appendix method cards. D10 and D11 are valid on the small family-focus search set but are not part of the final selected distance-only benchmark table. D12 is a failed sparse-geometric-graph attempt kept only for mechanism coverage and is marked `DO_NOT_EVALUATE.txt`.
+
 Additional candidate-list diagnostic: `candidate_list/02_candidate_mnnls_cr_105250_iter005/` contains the actual LLM-generated iter005 MNNLS-CR heuristic. The dedicated C++ launcher logs candidate-list use vs full-distance fallback counts.

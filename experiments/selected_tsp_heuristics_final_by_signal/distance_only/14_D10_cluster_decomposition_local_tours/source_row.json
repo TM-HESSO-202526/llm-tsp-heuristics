@@ -1,0 +1,20 @@
+{
+  "report_id": "TSP-D10",
+  "selected_id": "TSP_D10_CLUSTER_DECOMPOSITION_100159_119",
+  "heuristic_name": "Cluster-Based Decomposition with Improved Bridge Selection and Local Tour Refining",
+  "source_stage": "family_focus",
+  "run_name": "tsp_llamea_popmusic_train_20260524_100159",
+  "attempt": 119,
+  "source_mode": "cand=False, prior=False, hist=False, ff=True",
+  "focus_family_id": "clustering_decomposition",
+  "focus_family_name": "Cluster-based decomposition",
+  "code_hash": "3b8ab454a8cc3198",
+  "mean_gap_train_search": 41.772832,
+  "gap_dsj1000": 38.685363,
+  "gap_pr1002": 44.732382,
+  "gap_d1291": 41.90075,
+  "runtime_mean_s": 10.091906,
+  "status": "valid_on_search_set_exploratory",
+  "source_path": "TM/llm-tsp-runs/tsp_llamea_popmusic_train_20260524_100159/generated_code/attempt_0119_3b8ab454a8cc3198.py",
+  "notes": "Cleanest valid cluster-decomposition family-focus variant recovered from uploaded logs; retained to cover LLM-behaviour family mention."
+}

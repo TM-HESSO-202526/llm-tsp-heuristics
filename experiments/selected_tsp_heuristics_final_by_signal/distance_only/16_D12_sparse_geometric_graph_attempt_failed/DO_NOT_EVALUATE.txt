@@ -1,0 +1,2 @@
+This folder stores an LLM-generated sparse-geometric-graph attempt used only for appendix/method-card coverage.
+It failed validation in the original LLM loop and is intentionally skipped by the selected TSP evaluator.
