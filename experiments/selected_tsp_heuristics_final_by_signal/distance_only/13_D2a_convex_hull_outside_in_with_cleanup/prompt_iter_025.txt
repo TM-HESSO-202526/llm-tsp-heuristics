@@ -44,16 +44,12 @@ Rules:
 - Do not use global hidden state.
 - Keep the method scalable for n around 1000 to 1800 cities.
 - Avoid cubic or unbounded all-pairs local search.
-- When drawing an index, use rng.integers(problem.n) or rng.integers(0, problem.n); do not use rng.randint.
 
 Objective separation:
 The official evaluator computes the tour cost and gap outside your code after your algorithm returns a tour.
 No hidden evaluator-side local search, 2-opt, repair, or post-processing is applied beyond validation.
 Do not hard-code any instance names, coordinates, optima, reference values, or file paths.
 
-Diversity/novelty:
-Do not merely rename the previous algorithm or only tune constants.
-Prefer meaningful structural changes when redesigning, while still optimizing the active TSP objective.
 
 Return format:
 # Name:
@@ -68,7 +64,6 @@ iter=21 | ConvexHullOutsideIn | valid | family=insertion_constructive | focus_fa
 iter=22 | ConvexHullOutsideInImproved | invalid/partial | family=insertion_2opt | focus_family=convex_hull_outside_in | focus_compliance=compliant | focus_feedback=Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family. | search_gap=None | selection_score=None | error=candidate timed out after 60.0s
 iter=23 | ConvexHullOutsideInImprovedV2 | valid | family=insertion_constructive | focus_family=convex_hull_outside_in | focus_compliance=compliant | focus_feedback=Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family. | search_gap=16.126645969247072 | selection_score=16.126645969247072 | error=
 iter=24 | ConvexHullOutsideInImprovedV3 | invalid/partial | family=insertion_constructive | focus_family=convex_hull_outside_in | focus_compliance=compliant | focus_feedback=Convex-hull/outside-in insertion structure appears central; insertion_constructive is expected for this family. | search_gap=None | selection_score=None | error=candidate timed out after 60.0s
-
 
 
 Family-focus mode is ACTIVE.
@@ -87,7 +82,6 @@ Start from an outer boundary cycle or approximate hull, then insert interior cit
 Family description from launcher:
 Previous hull attempts were either very weak or computed a hull and then switched to nearest-neighbor. This block focuses on making outside-in construction the true mechanism.
 
-Family block: 2/3
 Call inside this family block: 5/20
 
 Strict constraints:
@@ -105,7 +99,6 @@ Strict constraints:
 - Bounded cleanup is allowed only after the family-specific constructive tour has been built.
 - The method must scale to n around 1000 to 1800 cities.
 
-Only use the local parent and local history from this same family block. Ignore successful heuristics from other family blocks as mechanisms to preserve. At the end of the run, the backend will compare the best candidate from each family separately.
 
 Selection mode: 1+1 family-focused exploitation.
 The selected parent below is the current best-so-far full-valid heuristic within this same focus family only. Use it as a local score/validity reference for this family block. Improve or redesign it while preserving the locked family as the main mechanism. Do not switch to nearest-neighbor, cheapest/regret insertion, simple greedy construction, or 2-opt-centered cleanup as the core idea. A lower score is useful, but this block is primarily testing whether this specific family can be made valid, scalable, and competitive.

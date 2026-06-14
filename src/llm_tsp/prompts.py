@@ -124,16 +124,12 @@ Rules:
 - Do not use global hidden state.
 - Keep the method scalable for n around 1000 to 1800 cities.
 - Avoid cubic or unbounded all-pairs local search.
-- When drawing an index, use rng.integers(problem.n) or rng.integers(0, problem.n); do not use rng.randint.
 
 Objective separation:
 The official evaluator computes the tour cost and gap outside your code after your algorithm returns a tour.
 No hidden evaluator-side local search, 2-opt, repair, or post-processing is applied beyond validation.
 Do not hard-code any instance names, coordinates, optima, reference values, or file paths.
 
-Diversity/novelty:
-Do not merely rename the previous algorithm or only tune constants.
-Prefer meaningful structural changes when redesigning, while still optimizing the active TSP objective.
 
 Return format:
 # Name:
@@ -324,8 +320,6 @@ def family_focus_block(
             seen.add(key)
 
     progress = []
-    if family_index is not None and total_families is not None:
-        progress.append(f"Family block: {int(family_index) + 1}/{int(total_families)}")
     if family_step is not None and calls_per_family is not None:
         progress.append(f"Call inside this family block: {int(family_step)}/{int(calls_per_family)}")
     progress_text = "\n".join(progress)
@@ -352,8 +346,7 @@ Family objective:
 
 Strict constraints:
 {constraints_text}
-
-Only use the local parent and local history from this same family block. Ignore successful heuristics from other family blocks as mechanisms to preserve. At the end of the run, the backend will compare the best candidate from each family separately.""".strip()
+""".strip()
 
 
 def _redesign_instruction(

@@ -51,16 +51,12 @@ Rules:
 - Do not use global hidden state.
 - Keep the method scalable for n around 1000 to 1800 cities.
 - Avoid cubic or unbounded all-pairs local search.
-- When drawing an index, use rng.integers(problem.n) or rng.integers(0, problem.n); do not use rng.randint.
 
 Objective separation:
 The official evaluator computes the tour cost and gap outside your code after your algorithm returns a tour.
 No hidden evaluator-side local search, 2-opt, repair, or post-processing is applied beyond validation.
 Do not hard-code any instance names, coordinates, optima, reference values, or file paths.
 
-Diversity/novelty:
-Do not merely rename the previous algorithm or only tune constants.
-Prefer meaningful structural changes when redesigning, while still optimizing the active TSP objective.
 
 Return format:
 # Name:
@@ -75,9 +71,6 @@ iter=1 | Nearest Neighbor with Local Search (NNLS) | valid | family=nearest_neig
 iter=2 | Nearest Neighbor with Adaptive Local Search (NNALS) | invalid/partial | family=nearest_neighbor | search_gap=None | selection_score=None | error=edge_cost(615,90) is only available for candidate edges
 iter=3 | Nearest Neighbor with Local Search and Candidate Restriction (NNLS-CR) | invalid/partial | family=nearest_neighbor | search_gap=None | selection_score=None | error=edge_cost(853,562) is only available for candidate edges
 iter=4 | Nearest Neighbor with Local Search and Candidate Restriction (NNLS-CR) | invalid/partial | family=nearest_neighbor | search_gap=None | selection_score=None | error=candidate timed out after 20.0s
-
-
-
 
 
 Selection mode: 1+1 elitist improvement.

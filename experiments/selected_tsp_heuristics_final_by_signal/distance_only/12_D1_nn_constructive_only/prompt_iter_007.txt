@@ -59,16 +59,12 @@ Rules:
 - Do not use global hidden state.
 - Keep the method scalable for n around 1000 to 1800 cities.
 - Avoid cubic or unbounded all-pairs local search.
-- When drawing an index, use rng.integers(problem.n) or rng.integers(0, problem.n); do not use rng.randint.
 
 Objective separation:
 The official evaluator computes the tour cost and gap outside your code after your algorithm returns a tour.
 No hidden evaluator-side local search, 2-opt, repair, or post-processing is applied beyond validation.
 Do not hard-code any instance names, coordinates, optima, reference values, or file paths.
 
-Diversity/novelty:
-Do not merely rename the previous algorithm or only tune constants.
-Prefer meaningful structural changes when redesigning, while still optimizing the active TSP objective.
 
 Return format:
 # Name:
@@ -85,9 +81,6 @@ iter=3 | Nearest Neighbor Heuristic with Random Start and Adaptive Edge Weight |
 iter=4 | Adaptive Nearest Neighbor Heuristic with Random Start and Distance-Based Probability | valid | family=nearest_neighbor | search_gap=1705.8363995380205 | selection_score=1705.8363995380205 | error=
 iter=5 | Adaptive Nearest Neighbor Heuristic with Weighted Edge Costs and Random Start | valid | family=nearest_neighbor | search_gap=1727.802539327108 | selection_score=1727.802539327108 | error=
 iter=6 | Improved Nearest Neighbor Heuristic with Adaptive Starting City and Weighted Edge Costs | valid | family=nearest_neighbor | search_gap=1039.5844293325536 | selection_score=1039.5844293325536 | error=
-
-
-
 
 
 Selection mode: 1+1 elitist improvement.

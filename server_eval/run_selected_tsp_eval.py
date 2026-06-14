@@ -251,11 +251,6 @@ def discover_heuristics(
         for hdir in sorted([p for p in mode_dir.iterdir() if p.is_dir()]):
             if wanted_set is not None and hdir.name not in wanted_set:
                 continue
-            # Appendix-only failed/generated attempts can be kept in the selected tree
-            # for source-code traceability without being picked up by ALL evaluations.
-            # They can still be inspected manually in the repository.
-            if wanted_set is None and (hdir / "DO_NOT_EVALUATE.txt").exists():
-                continue
             code = hdir / "heuristic.py"
             if not code.exists():
                 py_files = sorted(hdir.glob("*.py"))
