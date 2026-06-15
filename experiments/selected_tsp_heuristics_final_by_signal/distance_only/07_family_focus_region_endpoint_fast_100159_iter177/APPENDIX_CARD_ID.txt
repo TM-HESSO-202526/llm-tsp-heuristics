@@ -1,0 +1,3 @@
+Appendix method-card ID: TSP-D13
+Report label: app:tsp-d13
+Focused family: Region growth / endpoint bridging

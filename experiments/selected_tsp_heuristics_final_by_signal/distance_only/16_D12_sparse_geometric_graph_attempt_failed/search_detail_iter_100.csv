@@ -1,0 +1,31 @@
+iteration,attempt,objective_mode,center_constraint,instance,n,optimum,valid,cost,gap_percent,runtime_s,error,traceback,uses_only_candidates,candidate_edge_count,total_edges,candidate_edge_share,code_hash,name,family,parent_attempt,selection_strategy,prompt_mode,code_path,family_focus_active,focus_family_id,focus_family_name,focus_family_step,focus_family_index,focus_family_total,full_valid,valid_instances,total_instances,mean_gap_percent,search_gap_ref_mean_pct,search_cost_mean,selection_score,mean_runtime_s,record_error
+100,100,tsp,permutation_tour,dsj1000,1000,18659688.0,False,,,0.0032045841217041016,name 'hasattr' is not defined,"Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 115, in _call
+    return algo(problem, rng)
+           ^^^^^^^^^^^^^^^^^^
+  File ""<string>"", line 10, in __call__
+NameError: name 'hasattr' is not defined
+",,,,,67af15964f471642,Sparse Geometric Graph Heuristic with Improved Local Cleanup,nearest_neighbor,99,1+1,redesign_invalid_parent,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_llamea_popmusic_train_20260524_100159/codes/iter_100_67af15964f471642.py,True,sparse_geometric_graph,Sparse geometric graph / Gabriel-Delaunay approximation,20,4,9,False,0,3,,,,,,name 'hasattr' is not defined
+100,100,tsp,permutation_tour,pr1002,1002,259045.0,False,,,0.0016617774963378906,name 'hasattr' is not defined,"Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 115, in _call
+    return algo(problem, rng)
+           ^^^^^^^^^^^^^^^^^^
+  File ""<string>"", line 10, in __call__
+NameError: name 'hasattr' is not defined
+",,,,,67af15964f471642,Sparse Geometric Graph Heuristic with Improved Local Cleanup,nearest_neighbor,99,1+1,redesign_invalid_parent,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_llamea_popmusic_train_20260524_100159/codes/iter_100_67af15964f471642.py,True,sparse_geometric_graph,Sparse geometric graph / Gabriel-Delaunay approximation,20,4,9,False,0,3,,,,,,name 'hasattr' is not defined
+100,100,tsp,permutation_tour,d1291,1291,50801.0,False,,,0.00199127197265625,name 'hasattr' is not defined,"Traceback (most recent call last):
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 132, in evaluate_code_on_problem
+    tour = fn(problem, rng=rng)
+           ^^^^^^^^^^^^^^^^^^^^
+  File ""/content/llm-tsp-heuristics/src/llm_tsp/evaluation.py"", line 115, in _call
+    return algo(problem, rng)
+           ^^^^^^^^^^^^^^^^^^
+  File ""<string>"", line 10, in __call__
+NameError: name 'hasattr' is not defined
+",,,,,67af15964f471642,Sparse Geometric Graph Heuristic with Improved Local Cleanup,nearest_neighbor,99,1+1,redesign_invalid_parent,/content/drive/MyDrive/TM/llm-tsp-runs/tsp_llamea_popmusic_train_20260524_100159/codes/iter_100_67af15964f471642.py,True,sparse_geometric_graph,Sparse geometric graph / Gabriel-Delaunay approximation,20,4,9,False,0,3,,,,,,name 'hasattr' is not defined

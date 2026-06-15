@@ -21,3 +21,6 @@ Each heuristic folder contains:
 - `source_row.json`,
 - available search/detail CSVs when present.
 Additional candidate-list diagnostic: `candidate_list/02_candidate_mnnls_cr_105250_iter005/` contains the actual LLM-generated iter005 MNNLS-CR heuristic. The dedicated C++ launcher logs candidate-list use vs full-distance fallback counts.
+
+
+Appendix-only mechanism coverage folders are also included for TSP family-focus mechanisms discussed in the thesis but not used as final competitive selections: `14_D10_cluster_decomposition_local_tours/`, `15_D11_spectral_projection_partitioning/`, `16_D12_sparse_geometric_graph_attempt_failed/`, and `17_D14_polar_angle_sweep_constructive/`. Source-only failed attempts may include `DO_NOT_EVALUATE.txt` and are skipped by normal final-evaluation discovery.

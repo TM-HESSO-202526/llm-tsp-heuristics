@@ -28,5 +28,7 @@
   "raw_gap_test": null,
   "signal_category": "distance_only",
   "selection_folder": "07_family_focus_region_endpoint_fast_100159_iter177",
-  "final_selection_reason": "Fast region-growth/endpoint-bridging representative; weak gap but interesting runtime/mechanism."
+  "final_selection_reason": "Fast region-growth/endpoint-bridging representative; weak gap but interesting runtime/mechanism.",
+  "appendix_card_id": "TSP-D13",
+  "appendix_label": "app:tsp-d13"
 }
