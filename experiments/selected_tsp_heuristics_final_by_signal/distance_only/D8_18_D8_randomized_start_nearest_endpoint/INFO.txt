@@ -1,8 +1,0 @@
-Report ID: TSP-D8
-Include in final evaluation: true
-TSP-D8: Randomized-Start Nearest-Endpoint Path Constructor
-
-Appendix card: app:tsp-d8
-Source archive: TM/llm-tsp-runs/tsp_extended_final_eval_cache_build_20260601_113437/codes/iter_001_e09d836802f4a1ac.py
-Logged name: Nearest Neighbor Heuristic with Random Start
-Mechanism: choose a random start city, then repeatedly append the nearest unvisited city to the current endpoint.

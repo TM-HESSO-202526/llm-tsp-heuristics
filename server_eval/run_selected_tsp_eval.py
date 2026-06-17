@@ -12,6 +12,7 @@ import math
 import os
 from pathlib import Path
 import platform
+import re
 import signal
 import socket
 import sys
@@ -249,6 +250,13 @@ def _truthy(value: Any, default: bool = False) -> bool:
     return str(value).strip().lower() in {"1", "true", "yes", "y"}
 
 
+def _natural_report_id_key(value: str) -> tuple[str, int, str]:
+    match = re.match(r"^([A-Za-z]+)(\d+)([A-Za-z]*)$", str(value))
+    if match:
+        return (match.group(1), int(match.group(2)), match.group(3))
+    return (str(value), 10**9, "")
+
+
 def discover_heuristics(
     selected_root: Path,
     signal_mode: str,
@@ -261,52 +269,55 @@ def discover_heuristics(
 
     wanted_ids = parse_csv_filter(heuristic_ids, cast=str)
     wanted_set = set(wanted_ids) if wanted_ids is not None else None
-    manifest = _manifest_rows(selected_root)
-
     all_modes = ["distance_only", "candidate_list", "edge_prior"]
     modes = all_modes if signal_mode.lower() == "all" else [signal_mode]
     specs: list[HeuristicSpec] = []
-    if manifest:
-        candidates = [
-            (selected_root / mode / folder, mode, mrow)
-            for (mode, folder), mrow in manifest.items()
-            if mode in modes
-        ]
+
+    manifest_path = selected_root / "INDEX_selected_tsp_heuristics.csv"
+    if manifest_path.exists():
+        df = pd.read_csv(manifest_path)
+        if "signal_category" not in df.columns or "report_id" not in df.columns:
+            raise ValueError(f"{manifest_path} must contain signal_category and report_id columns")
+        df = df[df["signal_category"].astype(str).isin(modes)].copy()
+        if not include_appendix and "include_in_final_eval" in df.columns:
+            df = df[df["include_in_final_eval"].map(lambda x: _truthy(x, default=False))]
+        if "do_not_evaluate" in df.columns:
+            df = df[~df["do_not_evaluate"].map(lambda x: _truthy(x, default=False))]
+        if wanted_set is not None:
+            df = df[df["report_id"].astype(str).isin(wanted_set)]
+        df["_mode_order"] = df["signal_category"].astype(str).map({"distance_only": 0, "candidate_list": 1, "edge_prior": 2}).fillna(99)
+        df["_rid_key"] = df["report_id"].astype(str).map(_natural_report_id_key)
+        df = df.sort_values(["_mode_order", "_rid_key"])
+        for _, row in df.iterrows():
+            mode = str(row["signal_category"])
+            report_id = str(row["report_id"])
+            code_file = str(row.get("code_file", "") or f"{report_id}_heuristic.py")
+            rel_code = str(row.get("relative_code_file", "") or "")
+            code = selected_root / rel_code if rel_code else selected_root / mode / code_file
+            if not code.exists():
+                code = selected_root / mode / f"{report_id}_heuristic.py"
+            if not code.exists():
+                raise FileNotFoundError(f"Manifest row for {report_id} points to missing heuristic code: {code}")
+            specs.append(HeuristicSpec(mode, report_id, report_id, code))
     else:
-        candidates = []
         for mode in modes:
             mode_dir = selected_root / mode
             if not mode_dir.exists():
                 raise FileNotFoundError(f"Missing signal category folder: {mode_dir}")
-            candidates.extend((hdir, mode, {}) for hdir in sorted([p for p in mode_dir.iterdir() if p.is_dir()]))
+            for code in sorted(mode_dir.glob("*_heuristic.py"), key=lambda p: _natural_report_id_key(p.stem.replace("_heuristic", ""))):
+                report_id = code.stem.replace("_heuristic", "")
+                if wanted_set is not None and report_id not in wanted_set:
+                    continue
+                specs.append(HeuristicSpec(mode, report_id, report_id, code))
 
-    for hdir, mode, mrow in candidates:
-        if not hdir.exists():
-            continue
-        report_id = str(mrow.get("report_id", "") or "")
-        include_final = _truthy(mrow.get("include_in_final_eval"), default=True)
-        if not include_appendix and not include_final:
-            continue
-        if (hdir / "DO_NOT_EVALUATE.txt").exists():
-            continue
-        if wanted_set is not None and hdir.name not in wanted_set and report_id not in wanted_set:
-            continue
-        code_name = str(mrow.get("code_file", "") or "")
-        code = hdir / code_name if code_name else None
-        if code is None or not code.exists():
-            py_files = sorted(hdir.glob("*_heuristic.py"))
-            if not py_files:
-                py_files = sorted(p for p in hdir.glob("*.py") if p.name != "original_source.py")
-            if not py_files:
-                continue
-            code = py_files[0]
-        specs.append(HeuristicSpec(mode, hdir.name, report_id or hdir.name, code))
     if max_heuristics and max_heuristics > 0:
         specs = specs[: int(max_heuristics)]
     if not specs:
-        raise ValueError(f"No selected heuristics found for signal_mode={signal_mode!r}, heuristic_ids={heuristic_ids!r}, include_appendix={include_appendix!r}, root={selected_root}")
+        raise ValueError(
+            f"No selected heuristics found for signal_mode={signal_mode!r}, "
+            f"heuristic_ids={heuristic_ids!r}, include_appendix={include_appendix!r}, root={selected_root}"
+        )
     return specs
-
 
 def load_candidate_map(inst: TSPInstance, candidate_cache_dir: Path, max_candidates: int) -> tuple[dict[int, list[int]] | None, str]:
     params = PopmusicParams(max_candidates=int(max_candidates))
