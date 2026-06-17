@@ -1,0 +1,20 @@
+Report ID: TSP-D4
+Include in final evaluation: true
+Selection ID: TSP_FF_VORONOI_BEST_100159_037
+Signal category: distance_only
+Folder: 05_family_focus_voronoi_best_100159_iter037
+Candidate name: VoronoiRegionDecompositionHeuristic_Enhanced_v6
+Family: nearest_neighbor_2opt
+Run: tsp_llamea_popmusic_train_20260524_100159
+Attempt: 37.0
+Mode: cand=False, prior=False, hist=False, ff=True
+Mean train/search gap: 13.674789413126533
+Mean val gap: nan
+Mean test gap: nan
+Mean all-7 gap: nan
+Runtime mean s: 7.921805381774902
+Reason: Best Voronoi/region-decomposition family-focus candidate; partial compliance but useful.
+
+Original/source path: TM/llm-tsp-runs/tsp_llamea_popmusic_train_20260524_100159/generated_code/attempt_0037_8dd1626be4d6661f.py
+Copied code file: TSP_FF_VORONOI_BEST_100159_037__VoronoiRegionDecompositionHeuristic_Enhanced_v6.py
+Details copied: TSP_FF_VORONOI_BEST_100159_037__search_detail.csv

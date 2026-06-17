@@ -1,0 +1,20 @@
+Report ID: TSP-P1
+Include in final evaluation: true
+Selection ID: TSP_NEW_HIST_PRIOR_ONLY_BEST_201853_021
+Signal category: edge_prior
+Folder: 01_hist_prior_only_best_201853_iter021
+Candidate name: TSPHeuristic - Iterative Centroid-Based Tour Construction with Edge Prior
+Family: nearest_neighbor
+Run: tsp_llamea_popmusic_train_20260522_201853
+Attempt: 21.0
+Mode: cand=False, prior=True, hist=True, ff=False
+Mean train/search gap: 3.193111974159457
+Mean val gap: nan
+Mean test gap: nan
+Mean all-7 gap: nan
+Runtime mean s: 1.0855178038279216
+Reason: Best new historical-avoidance prior-only candidate; strongest train gap in selected TSP set.
+
+Original/source path: TM/llm-tsp-runs/tsp_llamea_popmusic_train_20260522_201853/generated_code/attempt_0021_82bea7d0c945eaa2.py
+Copied code file: TSP_NEW_HIST_PRIOR_ONLY_BEST_201853_021__TSPHeuristic_-_Iterative_Centroid-Based_Tour_Construction_with_Edge_Prior.py
+Details copied: TSP_NEW_HIST_PRIOR_ONLY_BEST_201853_021__search_detail.csv

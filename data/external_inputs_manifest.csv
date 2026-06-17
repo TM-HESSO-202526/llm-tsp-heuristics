@@ -1,0 +1,15 @@
+instance,split,reference_tour_length,tsplib_file,candidate_file,edge_prior_file,used_by_modes,notes
+dsj1000,train,18659688,dsj1000.tsp,dsj1000_cand-popmusic-k20-s14-sol20-nn5-tr1.cand,dsj1000_popmusic_edge_prior_runs30_topk5.npz,distance_only;candidate_list;edge_prior,
+pr1002,train,259045,pr1002.tsp,pr1002_cand-popmusic-k20-s14-sol20-nn5-tr1.cand,pr1002_popmusic_edge_prior_runs30_topk5.npz,distance_only;candidate_list;edge_prior,
+d1291,train,50801,d1291.tsp,d1291_cand-popmusic-k20-s14-sol20-nn5-tr1.cand,d1291_popmusic_edge_prior_runs30_topk5.npz,distance_only;candidate_list;edge_prior,
+fl1400,val,20127,fl1400.tsp,fl1400_cand-popmusic-k20-s14-sol20-nn5-tr1.cand,fl1400_popmusic_edge_prior_runs30_topk5.npz,distance_only;candidate_list;edge_prior,
+pcb1173,val,56892,pcb1173.tsp,pcb1173_cand-popmusic-k20-s14-sol20-nn5-tr1.cand,pcb1173_popmusic_edge_prior_runs30_topk5.npz,distance_only;candidate_list;edge_prior,
+rl1304,test,252948,rl1304.tsp,rl1304_cand-popmusic-k20-s14-sol20-nn5-tr1.cand,rl1304_popmusic_edge_prior_runs30_topk5.npz,distance_only;candidate_list;edge_prior,
+u1817,test,57201,u1817.tsp,u1817_cand-popmusic-k20-s14-sol20-nn5-tr1.cand,u1817_popmusic_edge_prior_runs30_topk5.npz,distance_only;candidate_list;edge_prior,
+rl1889,extended,316536,rl1889.tsp,rl1889_cand-popmusic-k20-s14-sol20-nn5-tr1.cand,rl1889_popmusic_edge_prior_runs30_topk5.npz,distance_only;candidate_list;edge_prior,extended instance in metadata
+pr2392,extended,378032,pr2392.tsp,pr2392_cand-popmusic-k20-s14-sol20-nn5-tr1.cand,pr2392_popmusic_edge_prior_runs30_topk5.npz,distance_only;candidate_list;edge_prior,extended instance in metadata
+pcb3038,extended,137694,pcb3038.tsp,pcb3038_cand-popmusic-k20-s14-sol20-nn5-tr1.cand,pcb3038_popmusic_edge_prior_runs30_topk5.npz,distance_only;candidate_list;edge_prior,extended instance in metadata
+pla7397,extended,23260728,pla7397.tsp,pla7397_cand-popmusic-k20-s14-sol20-nn5-tr1.cand,pla7397_popmusic_edge_prior_runs30_topk5.npz,distance_only;candidate_list;edge_prior,extended instance in metadata
+usa13509,extended,19982859,usa13509.tsp,usa13509_cand-popmusic-k20-s14-sol20-nn5-tr1.cand,,distance_only;candidate_list,"extended instance in metadata | edge-prior cache not part of the final external-cache set | candidate cache exists, but final .npz edge-prior cache is not part of the final external-cache set"
+pla33810,extended,66048945,pla33810.tsp,,,distance_only,extended instance in metadata | candidate cache not part of the final external-cache set | edge-prior cache not part of the final external-cache set | large TSPLIB instance kept as reference metadata; not part of default cleaned 1k+ final-evaluation cache manifest
+pla85900,extended,142382641,pla85900.tsp,,,distance_only,extended instance in metadata | candidate cache not part of the final external-cache set | edge-prior cache not part of the final external-cache set | large TSPLIB instance kept as reference metadata; not part of default cleaned 1k+ final-evaluation cache manifest

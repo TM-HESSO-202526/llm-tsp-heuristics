@@ -21,5 +21,5 @@ Recommended artifact contents per run:
 
 ## Selected TSP heuristics for final evaluation
 
-Final selected TSP heuristics are stored in `selected_tsp_heuristics_final_by_signal/`, grouped by available signal: distance-only, candidate-list, edge-prior, and edge-prior + candidate-list.
+Final selected TSP heuristics are stored in `selected_tsp_heuristics_final_by_signal/`, grouped by available signal: distance-only, candidate-list, and edge-prior. Appendix-only exploratory methods are kept for traceability when they are discussed in the report, but the final evaluator uses the method manifest and runs only methods marked `include_in_final_eval=true` by default.
 

@@ -1,0 +1,14 @@
+Report ID: TSP-D1
+Include in final evaluation: true
+new_report_id: D1
+old_report_id: D1a before renaming
+method: Improved Nearest Neighbor Heuristic with Multiple Random Starts and Best Tour Selection
+family: nearest_neighbor
+code_hash: e3fe52ca038791c5
+role: distance-only nearest-neighbour constructive-only control; no cleanup / no local improvement
+search_gap_pct: 21.30511298346823
+mean_runtime_s: 3.49349053700765
+source_run: tsp_extended_final_eval_cache_build_20260601_113437
+iteration: 7
+
+Added final distance-only heuristic for appendix-code coverage.

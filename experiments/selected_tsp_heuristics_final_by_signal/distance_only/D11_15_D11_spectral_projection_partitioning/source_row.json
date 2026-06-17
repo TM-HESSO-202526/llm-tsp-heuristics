@@ -1,0 +1,22 @@
+{
+  "report_id": "D11",
+  "selected_id": "TSP_D11_SPECTRAL_PROJECTION_100159_140",
+  "heuristic_name": "Recursive Spectral Clustering Proxy Heuristic with Enhanced Partitioning, Adaptive Bridging, and Local Refining",
+  "source_stage": "family_focus",
+  "run_name": "tsp_llamea_popmusic_train_20260524_100159",
+  "attempt": 140,
+  "source_mode": "cand=False, prior=False, hist=False, ff=True",
+  "focus_family_id": "spectral_clustering_proxy",
+  "focus_family_name": "Spectral clustering / graph-cut proxy",
+  "code_hash": "0745fc4754459c86",
+  "mean_gap_train_search": 29.218345,
+  "gap_dsj1000": 36.132158,
+  "gap_pr1002": 25.184813,
+  "gap_d1291": 26.338064,
+  "runtime_mean_s": 2.348948,
+  "status": "valid_on_search_set_exploratory",
+  "source_path": "TM/llm-tsp-runs/tsp_llamea_popmusic_train_20260524_100159/generated_code/attempt_0140_0745fc4754459c86.py",
+  "notes": "Cleanest valid spectral/graph-cut proxy family-focus variant recovered from uploaded logs; retained to cover LLM-behaviour family mention.",
+  "include_in_final_eval": false,
+  "code_file": "D11_heuristic.py"
+}

@@ -1,146 +1,56 @@
 # LLM TSP Heuristics
 
-Colab-first research code for generating and evaluating LLM-generated constructive heuristics for large Traveling Salesman Problem instances.
+This repository contains the code used for the TSP branch of the thesis experiments on LLM-generated constructive heuristics. It includes the generation pipeline, prompt material, selected/generated heuristic implementations, reference summaries, and the final Python evaluator used for server-side evaluation.
 
-This repository is the TSP counterpart of the clustering experiments in `llm-clustering-heuristics`. It focuses on a cleaned version of the thesis TSP work: a LLaMEA-style loop for constructive TSP heuristics, optionally combined with LKH/POPMUSIC candidate sets and edge-frequency priors.
+This repository is a final thesis artifact, not a general-purpose TSP solver library. It contains the final selected heuristics evaluated in the report, appendix and diagnostic heuristics kept for traceability, prompt-reference material, and scripts needed to reproduce the reported evaluations. By default, the final evaluator only runs the report-selected methods.
 
-The goal is **not** to package every historical notebook or every failed run. The goal is to preserve the thesis-relevant TSP pipeline in a reproducible form.
+## Repository structure
 
-## Core idea
+- `src/llm_tsp/` — reusable Python package for TSP instances, distances, candidate sets, priors, prompts, and evaluation helpers.
+- `configs/` — YAML configurations for the LLM-generation runs and large-instance suite.
+- `notebooks/` — Colab launcher used during generation.
+- `docs/` — methodology notes and exact prompt-reference notebooks.
+- `experiments/selected_tsp_heuristics_final_by_signal/` — curated Python heuristic implementations grouped by signal regime.
+- `server_eval/run_selected_tsp_eval.py` — final Python evaluator for selected heuristics.
+- `data/` — instance-suite manifests, reference optima metadata, and an external-input manifest for required `.tsp`, `.cand`, and `.npz` files.
 
-An LLM proposes executable Python heuristic code. The code is evaluated automatically on a fixed TSPLIB split. The result is fed back to the next LLM call using the same invalid-parent redesign controls as the clustering repo. This is the same research pattern used later in the clustering repo: generate, evaluate, summarize, and iterate.
+## Selected and appendix methods
 
-The TSP-specific addition is a switchable POPMUSIC/LKH layer inside the same LLaMEA loop:
+The selected TSP heuristics are stored under:
 
-```python
-USE_POPMUSIC_CANDIDATES = True
-USE_POPMUSIC_EDGE_PRIOR = True
-POPMUSIC_PRIOR_MODE = "frequency"  # none, frequency, binary_topk, shuffled
-MAX_CANDIDATES = 20
+```text
+experiments/selected_tsp_heuristics_final_by_signal/
 ```
 
-With these flags, the same LLaMEA loop can be run in dense mode, candidate-guided mode, or candidate-guided mode with a POPMUSIC edge prior. When candidate mode is active, missing POPMUSIC/LKH candidate files are generated automatically into the cache before the LLaMEA loop evaluates candidates. The LLM receives sparse candidate lists through `problem.neighbors(i)`, not a full dense distance matrix. Candidate edges guide construction, but final returned tours are normal TSP tours and may include non-candidate edges; they are always evaluated on the true full TSPLIB distance.
+The file `APPENDIX_METHODS_INDEX.csv` maps the TSP appendix method cards to their corresponding Python source files. Appendix-only exploratory methods are included in the same folder tree for traceability, but they are not all part of the final competitive selected set.
 
-When edge-prior mode is active, the prior is generated using the historical procedure: 30 short LKH/POPMUSIC runs with `MOVE_TYPE = 5`, `PATCHING_A = 2`, `PATCHING_C = 3`, `TIME_LIMIT = 1.0`, and `OUTPUT_TOUR_FILE`; successful tours are parsed, tour edges are counted symmetrically, and the cache is saved as `/content/drive/MyDrive/TM/LKH_edge_prior_cache/{instance}_popmusic_edge_prior_runs30_topk5.npz`.
+## Final evaluation
 
-## Instance policy
-
-This cleaned repo intentionally ignores the early small-instance experiments. The default split uses only the 1k+ TSPLIB instances used in the later thesis weeks:
-
-| Split | Instances |
-|---|---|
-| Train | `dsj1000`, `pr1002`, `d1291` |
-| Validation | `fl1400`, `pcb1173` |
-| Test | `rl1304`, `u1817` |
-
-Optimum values and split metadata are stored in `data/tsp_instances_opt.csv` and `configs/tsp_large_suite.yaml`.
-
-## Recommended Colab workflow
-
-```python
-from google.colab import drive
-drive.mount('/content/drive')
-
-!git clone https://github.com/TM-HESSO-202526/llm-tsp-heuristics.git
-%cd llm-tsp-heuristics
-!pip install -r requirements.txt
-
-!python scripts/run_unified_tsp_pipeline.py --config configs/run_llamea_popmusic_candidates.yaml
-```
-
-For a smoke test without TSPLIB files:
+The cleaned server evaluator is:
 
 ```bash
-python scripts/run_unified_tsp_pipeline.py --config configs/run_llamea_dense.yaml --dry-run
+python server_eval/run_selected_tsp_eval.py --help
 ```
 
-## Important configuration variables
+The evaluator expects the TSPLIB instance files and, for signal-based regimes, the precomputed POPMUSIC candidate and edge-prior files described in `data/external_inputs_manifest.csv`, `docs/popmusic_candidates.md`, and `data/README.md`.
 
-The unified runner and notebook launcher expose the same LLaMEA-style controls used in the clustering work:
+## Tests
 
-```python
-LLM_PROVIDER = "groq"
-LLM_MODEL = "llama-3.3-70b-versatile"
-MAX_LLM_CALLS = 40
-GLOBAL_SEED = 12345
-CANDIDATE_TIMEOUT_S = 60
+Run the repository tests from the project root with:
 
-SELECTION_STRATEGY = "1+1"       # "1+1" = elitist best-so-far parent; "1,1" = latest sequential parent
-HISTORY_LIMIT = 20
-INVALID_PARENT_REDESIGN = True
-REDESIGN_ON_ANY_INVALID_BEFORE_FULL_VALID = True
-REDESIGN_ON_TIMEOUT_PARENT = True
-HIDE_INVALID_PARENT_CODE = False
-
-HISTORICAL_FAMILY_AVOIDANCE = False
-STRICT_CONSTRUCTIVE_ONLY = False
+```bash
+python -m pytest -q
 ```
 
-There is intentionally no separate experiment-mode variable anymore. This repo always runs the TSP LLaMEA loop; dense mode, candidate mode, and POPMUSIC-prior mode are controlled by the POPMUSIC flags.
 
-The intent is that the TSP loop remains flexible enough to reproduce early LLaMEA-style experiments, while using the same cleaner runtime-control style as the clustering repo.
+## Prompt material
 
-## Repository layout
+The exact prompt blocks referenced by the report are provided in:
 
 ```text
-configs/       YAML configs for dense LLaMEA and POPMUSIC-enabled LLaMEA runs.
-data/          Instance split/optimum metadata and placeholders for local TSPLIB files.
-docs/          Methodology, prompt design, POPMUSIC notes, and relation to clustering.
-experiments/   Small curated summaries only; full generated artifacts should stay in Drive.
-notebooks/     Colab launcher and archived reference notebooks.
-scripts/       CLI entrypoints for unified runs, candidate building, and summaries.
-src/llm_tsp/   Reusable Python package.
-tests/         Small tests/smoke checks.
+docs/prompt_reference/exact_tsp_prompt_blocks.ipynb
 ```
 
-## Generated artifacts
+## Notes
 
-Real experiment outputs should go to Google Drive, typically:
-
-```text
-/content/drive/MyDrive/TM/llm-tsp-runs/
-```
-
-Each run folder stores prompts, raw LLM responses, generated code, per-instance details, summaries, and a zipped artifact bundle. Artifact names intentionally mirror the clustering repo style:
-
-```text
-codes/iter_*.py
-prompts/prompt_iter_*.txt
-raw_responses/raw_iter_*.txt
-llm_attempts.csv
-llm_search_instance_rows.csv
-search_detail_iter_*.csv
-llm_best_attempts_top20.csv
-llm_family_summary.csv
-best_candidate_code.py
-best_candidate_summary.json
-```
-
-Legacy aliases such as `generated_attempts.csv`, `generated_code/`, and `raw_llm_responses/` are still written for convenience. The `experiments/runs/` directory is ignored by git by default.
-
-## What this repo deliberately excludes
-
-This first clean version does **not** include the fixed scaffold/hook experiments. The public TSP story is centered on:
-
-1. the LLaMEA-style generation loop;
-2. the 1k+ TSPLIB split;
-3. optional POPMUSIC/LKH candidate sets generated/cached with the historical LKH-3.0.8 workflow;
-4. optional POPMUSIC/LKH tour-frequency edge-prior information generated from 30 short LKH runs;
-5. selected clean summaries from historical prior/candidate experiments.
-
-## Thesis framing
-
-The TSP experiments showed that unrestricted LLM generation tends to rediscover common constructive families such as nearest-neighbor, insertion, and regret-style heuristics. The more useful thesis signal came from combining LLM generation with operational structure: large-instance splits, candidate-guided construction, POPMUSIC/LKH candidate sets, and explicit edge-prior information. These lessons motivated the later clustering repo design.
-
-
-## Unified Colab launcher
-
-The main notebook is `notebooks/00_tsp_colab_launcher.ipynb`. It follows the same launcher philosophy as the clustering repository: one control panel, Drive mounting, repo refresh, editable install, runtime-config generation, file checks, live logs, artifact summaries, and optional artifact zip download.
-
-### Family-focus mode
-
-The Colab launcher now includes an optional `FAMILY_FOCUS_MODE`. This mode is intended for follow-up runs after historical family avoidance reveals several alternative families. Instead of mixing all families in one prompt, the backend runs one local block per family, with its own parent and history, then writes `family_focus_summary.csv` to compare the best candidate from each family. The editable family descriptions live in the launcher variable `FAMILY_FOCUS_PLAN`.
-
-### Strict constructive-only mode
-
-Set `STRICT_CONSTRUCTIVE_ONLY = True` in the Colab launcher, or `search.strict_constructive_only: true` in YAML, to force the prompt to ask for pure constructive TSP heuristics. In this mode the LLM is explicitly forbidden from adding 2-opt, 3-opt, local search, segment-reversal cleanup, relocate/swap moves, or any post-construction optimization/refinement phase.
+The repository keeps the Python implementations used for the thesis report. Earlier evaluator prototypes and server-specific launch wrappers were removed from this final-submission version to keep the repository focused and reproducible.

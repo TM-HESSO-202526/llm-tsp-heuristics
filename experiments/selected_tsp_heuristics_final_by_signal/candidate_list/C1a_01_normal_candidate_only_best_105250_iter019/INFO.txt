@@ -1,0 +1,20 @@
+Report ID: TSP-C1a
+Include in final evaluation: true
+Selection ID: TSP_NEW_NORMAL_CANDIDATE_ONLY_BEST_105250_019
+Signal category: candidate_list
+Folder: 01_normal_candidate_only_best_105250_iter019
+Candidate name: Enhanced Modified Nearest Neighbor with Local Search, Improved Candidate Restriction, and Adaptive 2-Opt with Neighborho
+Family: candidate_2opt
+Run: tsp_llamea_popmusic_train_20260520_105250
+Attempt: 19.0
+Mode: cand=True, prior=False, hist=False, ff=False
+Mean train/search gap: 9.477004751337295
+Mean val gap: nan
+Mean test gap: nan
+Mean all-7 gap: nan
+Runtime mean s: 4.431132078170776
+Reason: Best candidate-list-only LLaMEA heuristic; candidate-restricted NN/local-search representative.
+
+Original/source path: TM/llm-tsp-runs/tsp_llamea_popmusic_train_20260520_105250/generated_code/attempt_0019_11141c55acdbd087.py
+Copied code file: TSP_NEW_NORMAL_CANDIDATE_ONLY_BEST_105250_019__Enhanced_Modified_Nearest_Neighbor_with_Local_Search_Improved_Candidate_Restriction_and_Adaptive_2-Opt_with_Neighborho.py
+Details copied: TSP_NEW_NORMAL_CANDIDATE_ONLY_BEST_105250_019__search_detail.csv

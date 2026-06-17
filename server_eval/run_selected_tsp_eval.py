@@ -226,52 +226,85 @@ def load_instances(
     return rows
 
 
+def _manifest_rows(selected_root: Path) -> dict[tuple[str, str], dict[str, Any]]:
+    manifest_path = selected_root / "INDEX_selected_tsp_heuristics.csv"
+    if not manifest_path.exists():
+        return {}
+    try:
+        df = pd.read_csv(manifest_path)
+    except Exception:
+        return {}
+    rows: dict[tuple[str, str], dict[str, Any]] = {}
+    for _, row in df.iterrows():
+        key = (str(row.get("signal_category", "")), str(row.get("selection_folder", "")))
+        rows[key] = dict(row)
+    return rows
+
+
+def _truthy(value: Any, default: bool = False) -> bool:
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return default
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {"1", "true", "yes", "y"}
+
+
 def discover_heuristics(
     selected_root: Path,
     signal_mode: str,
     max_heuristics: int,
     heuristic_ids: str | None = None,
+    include_appendix: bool = False,
 ) -> list[HeuristicSpec]:
     if not selected_root.exists():
         raise FileNotFoundError(f"Missing selected TSP root: {selected_root}")
 
     wanted_ids = parse_csv_filter(heuristic_ids, cast=str)
     wanted_set = set(wanted_ids) if wanted_ids is not None else None
+    manifest = _manifest_rows(selected_root)
 
-    all_modes = ["distance_only", "candidate_list", "edge_prior", "edge_prior_plus_candidate_list"]
-    if signal_mode.lower() == "all":
-        modes = all_modes
-    else:
-        modes = [signal_mode]
+    all_modes = ["distance_only", "candidate_list", "edge_prior"]
+    modes = all_modes if signal_mode.lower() == "all" else [signal_mode]
     specs: list[HeuristicSpec] = []
-    for mode in modes:
-        mode_dir = selected_root / mode
-        if not mode_dir.exists():
-            raise FileNotFoundError(f"Missing signal category folder: {mode_dir}")
-        for hdir in sorted([p for p in mode_dir.iterdir() if p.is_dir()]):
-            if wanted_set is not None and hdir.name not in wanted_set:
+    if manifest:
+        candidates = [
+            (selected_root / mode / folder, mode, mrow)
+            for (mode, folder), mrow in manifest.items()
+            if mode in modes
+        ]
+    else:
+        candidates = []
+        for mode in modes:
+            mode_dir = selected_root / mode
+            if not mode_dir.exists():
+                raise FileNotFoundError(f"Missing signal category folder: {mode_dir}")
+            candidates.extend((hdir, mode, {}) for hdir in sorted([p for p in mode_dir.iterdir() if p.is_dir()]))
+
+    for hdir, mode, mrow in candidates:
+        if not hdir.exists():
+            continue
+        report_id = str(mrow.get("report_id", "") or "")
+        include_final = _truthy(mrow.get("include_in_final_eval"), default=True)
+        if not include_appendix and not include_final:
+            continue
+        if (hdir / "DO_NOT_EVALUATE.txt").exists():
+            continue
+        if wanted_set is not None and hdir.name not in wanted_set and report_id not in wanted_set:
+            continue
+        code_name = str(mrow.get("code_file", "") or "")
+        code = hdir / code_name if code_name else None
+        if code is None or not code.exists():
+            py_files = sorted(hdir.glob("*_heuristic.py"))
+            if not py_files:
+                py_files = sorted(p for p in hdir.glob("*.py") if p.name != "original_source.py")
+            if not py_files:
                 continue
-            code = hdir / "heuristic.py"
-            if not code.exists():
-                py_files = sorted(hdir.glob("*.py"))
-                if not py_files:
-                    continue
-                code = py_files[0]
-            specs.append(
-                HeuristicSpec(
-                    signal_category=mode,
-                    heuristic_id=hdir.name,
-                    heuristic_label=hdir.name,
-                    code_path=code,
-                )
-            )
+            code = py_files[0]
+        specs.append(HeuristicSpec(mode, hdir.name, report_id or hdir.name, code))
     if max_heuristics and max_heuristics > 0:
         specs = specs[: int(max_heuristics)]
     if not specs:
-        raise ValueError(
-            f"No selected heuristics found for signal_mode={signal_mode!r}, "
-            f"heuristic_ids={heuristic_ids!r}, root={selected_root}"
-        )
+        raise ValueError(f"No selected heuristics found for signal_mode={signal_mode!r}, heuristic_ids={heuristic_ids!r}, include_appendix={include_appendix!r}, root={selected_root}")
     return specs
 
 
@@ -309,8 +342,8 @@ def make_problem(
     prior_mode: str,
     seed: int,
 ) -> tuple[SparseTSPProblem, dict[str, Any]]:
-    use_candidates = signal_category in {"candidate_list", "edge_prior_plus_candidate_list"}
-    use_prior = signal_category in {"edge_prior", "edge_prior_plus_candidate_list"}
+    use_candidates = signal_category == "candidate_list"
+    use_prior = signal_category == "edge_prior"
 
     candidate_map = None
     prior_map = None
@@ -378,23 +411,7 @@ def call_heuristic_from_module(mod, problem: SparseTSPProblem, rng: np.random.Ge
             algo = mod.TSPHeuristic()
             return algo(problem, rng=rng)
 
-        if hasattr(mod, "construct_tour"):
-            fn = mod.construct_tour
-            sig = inspect.signature(fn)
-            n_params = len(sig.parameters)
-
-            # Common old notebook signatures:
-            # construct_tour(problem)
-            # construct_tour(D, start_node)
-            # construct_tour(D, prior_rows, start_node)
-            if n_params == 1:
-                return fn(problem)
-            if n_params == 2:
-                return fn(problem.distance_matrix_for_evaluator(), int(seed % problem.n))
-            if n_params >= 3:
-                return fn(problem.distance_matrix_for_evaluator(), prior_rows_from_problem(problem), int(seed % problem.n))
-
-        raise ValueError("Heuristic code must define class TSPHeuristic or function construct_tour")
+        raise ValueError("Heuristic code must define class TSPHeuristic")
 
 
 def normalize_tour(raw_tour: Any, n: int) -> np.ndarray:
@@ -703,9 +720,10 @@ def summarize(raw_path: Path, out_dir: Path):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--signal-mode", default="all", choices=["all", "distance_only", "candidate_list", "edge_prior", "edge_prior_plus_candidate_list"])
+    ap.add_argument("--signal-mode", default="all", choices=["all", "distance_only", "candidate_list", "edge_prior"])
     ap.add_argument("--selected-root", default="experiments/selected_tsp_heuristics_final_by_signal")
-    ap.add_argument("--heuristic-ids", default="ALL", help="Comma-separated heuristic folder names to evaluate, or ALL")
+    ap.add_argument("--heuristic-ids", default="ALL", help="Comma-separated selected heuristic folder names or report IDs to evaluate, or ALL")
+    ap.add_argument("--include-appendix", action="store_true", help="Also evaluate runnable appendix-only methods. Rows marked do_not_evaluate are always skipped.")
     ap.add_argument("--instance-root", required=True)
     ap.add_argument("--candidate-cache-dir", default="")
     ap.add_argument("--edge-prior-cache-dir", default="")
@@ -747,7 +765,7 @@ def main():
     candidate_cache_dir = Path(args.candidate_cache_dir).expanduser().resolve() if args.candidate_cache_dir else Path("__missing_candidate_cache__")
     edge_prior_cache_dir = Path(args.edge_prior_cache_dir).expanduser().resolve() if args.edge_prior_cache_dir else Path("__missing_edge_prior_cache__")
 
-    heuristics = discover_heuristics(selected_root, args.signal_mode, args.max_heuristics, args.heuristic_ids)
+    heuristics = discover_heuristics(selected_root, args.signal_mode, args.max_heuristics, args.heuristic_ids, include_appendix=args.include_appendix)
     instances = load_instances(
         instance_root=instance_root,
         optima_csv=optima_csv,

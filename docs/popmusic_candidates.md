@@ -62,3 +62,8 @@ This gives two separate caches:
 
 1. `/content/drive/MyDrive/TM/LKH_candidate_cache` for POPMUSIC candidate files.
 2. `/content/drive/MyDrive/TM/LKH_edge_prior_cache` for 30-run LKH tour-frequency priors.
+
+
+## External input manifest
+
+The final repository does not bundle `.tsp`, `.cand`, `.npz`, `.tour`, `.par`, or LKH log files. The expected filenames for reproducing the final evaluator are listed in `data/external_inputs_manifest.csv`.
