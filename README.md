@@ -32,7 +32,7 @@ Without a Groq key, the notebook can still be inspected, but the LLM-generation 
 - `configs/` — YAML configurations for the LLM-generation runs and large-instance suite.
 - `notebooks/00_tsp_colab_launcher.ipynb` — clean Colab launcher for the TSP generation pipeline.
 - `scripts/` — supporting scripts used by the generation/cache workflow.
-- `docs/` — prompt-reference notebooks.
+- `docs/` — prompt-reference notebook.
 - `experiments/selected_tsp_heuristics_final_by_signal/` — curated Python heuristic implementations grouped by signal regime and named with the report IDs.
 - `server_eval/run_selected_tsp_eval.py` — final Python evaluator for selected TSP heuristics.
 - `data/` — instance-suite manifests, reference optima metadata, and an external-input for required `.tsp`, `.cand`, and `.npz` files.
