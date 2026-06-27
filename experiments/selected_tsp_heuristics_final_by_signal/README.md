@@ -2,7 +2,7 @@
 
 This folder contains the final TSP heuristic code used for the thesis tables and appendix method cards. The implementations are grouped by signal regime and named directly with the report identifiers used in the result tables and method cards.
 
-By default, `server_eval/run_selected_tsp_eval.py` evaluates only rows marked `include_in_final_eval=true` in `INDEX_selected_tsp_heuristics.csv`. Appendix-only methods remain available for code inspection but are not run by a normal full evaluation command. Rows marked `do_not_evaluate=true`, such as the failed D12 attempt, are always skipped.
+By default, `server_eval/run_selected_tsp_eval.py` evaluates only rows marked `include_in_final_eval=true` in `INDEX_selected_tsp_heuristics.csv`. Appendix-only methods remain available for code inspection but are not run by a normal full evaluation command. Rows marked `do_not_evaluate=true`, such as the failed D10 attempt, are always skipped.
 
 ## Folder structure
 
@@ -34,19 +34,17 @@ Each Python file defines the required `TSPHeuristic` class for the corresponding
 - `TSP-D1` (final) — `distance_only/D1_heuristic.py`: multi-start nearest-neighbour construction without cleanup
 - `TSP-D1a` (final) — `distance_only/D1a_heuristic.py`: nearest-neighbour construction with 2-opt local improvement
 - `TSP-D2` (final) — `distance_only/D2_heuristic.py`: convex-hull outside-in insertion
-- `TSP-D2a` (final) — `distance_only/D2a_heuristic.py`: convex-hull outside-in insertion with bounded cleanup
-- `TSP-D3` (final) — `distance_only/D3_heuristic.py`: grid/sector decomposition with endpoint bridging
-- `TSP-D4` (final) — `distance_only/D4_heuristic.py`: Voronoi-style regional construction
-- `TSP-D5` (final) — `distance_only/D5_heuristic.py`: convex-hull insertion with heavier repair
-- `TSP-D6` (final) — `distance_only/D6_heuristic.py`: fast convex-hull insertion variant
-- `TSP-D7` (final) — `distance_only/D7_heuristic.py`: distance-stabilized nearest-neighbour constructor
-- `TSP-D8` (final) — `distance_only/D8_heuristic.py`: randomized-start nearest-endpoint path constructor
-- `TSP-D9` (final) — `distance_only/D9_heuristic.py`: pseudo-MST nearest-neighbour scaffold with weak cleanup
-- `TSP-D10` (appendix-only) — `distance_only/D10_heuristic.py`: cluster-based decomposition with local tours and bridge selection
-- `TSP-D11` (appendix-only) — `distance_only/D11_heuristic.py`: spectral-projection partitioning with local paths and randomized cleanup
-- `TSP-D12` (appendix-only, do not evaluate) — `distance_only/D12_heuristic.py`: sparse geometric graph approximation attempt
-- `TSP-D13` (appendix-only) — `distance_only/D13_heuristic.py`: region growth with endpoint bridging
-- `TSP-D14` (appendix-only) — `distance_only/D14_heuristic.py`: polar-angle sweep construction
+- `TSP-D2a` (final) — `distance_only/D2a_heuristic.py`: convex-hull outside-in insertion with repair
+- `TSP-D3` (final) — `distance_only/D3_heuristic.py`: grid/sector decomposition with endpoint bridging and 2-opt improvement
+- `TSP-D4` (final) — `distance_only/D4_heuristic.py`: Voronoi-style regional construction without post-construction improvement
+- `TSP-D5` (final) — `distance_only/D5_heuristic.py`: distance-stabilized nearest-neighbour constructor
+- `TSP-D6` (final) — `distance_only/D6_heuristic.py`: randomized-start nearest-endpoint path constructor
+- `TSP-D7` (final) — `distance_only/D7_heuristic.py`: pseudo-MST nearest-neighbour scaffold with weak cleanup
+- `TSP-D8` (appendix-only) — `distance_only/D8_heuristic.py`: cluster-based decomposition with local tours and bridge selection
+- `TSP-D9` (appendix-only) — `distance_only/D9_heuristic.py`: spectral-projection partitioning with local paths and randomized cleanup
+- `TSP-D10` (appendix-only, do not evaluate) — `distance_only/D10_heuristic.py`: sparse geometric graph approximation attempt
+- `TSP-D11` (appendix-only) — `distance_only/D11_heuristic.py`: region growth with endpoint bridging
+- `TSP-D12` (appendix-only) — `distance_only/D12_heuristic.py`: polar-angle sweep construction
 
 ### candidate_list
 

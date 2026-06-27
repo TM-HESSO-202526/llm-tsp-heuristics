@@ -4,75 +4,76 @@ class TSPHeuristic:
     def __call__(self, problem, rng=None):
         if rng is None:
             rng = np.random.default_rng()
-        
-        # Number of cities
+
         n = problem.n
-        
-        # City coordinates
-        coords = problem.coords
-        
-        # Dimensionality of the coordinates
-        dim = coords.shape[1]
-        
-        # Project coordinates onto a random line
-        num_projections = 5
-        lines = rng.standard_normal((num_projections, dim))
-        lines = lines / np.linalg.norm(lines, axis=1, keepdims=True)
-        projections = np.dot(coords, lines.T)
-        
-        # Sort cities by their projections and select the best split
-        best_split = None
-        best_cost = np.inf
-        for i in range(num_projections):
-            sorted_indices = np.argsort(projections[:, i])
-            mid = n // 2
-            left_half = sorted_indices[:mid]
-            right_half = sorted_indices[mid:]
-            left_path = self.build_path(problem, left_half, rng)
-            right_path = self.build_path(problem, right_half, rng)
-            tour = np.concatenate((left_path, right_path))
-            cost = self.tour_cost(problem, tour)
-            if cost < best_cost:
-                best_cost = cost
-                best_split = tour
-        
-        # Local refining
-        best_split = self.local_refine(problem, best_split, rng)
-        
-        return best_split
-    
-    def build_path(self, problem, cities, rng):
+        tour = []
+        open_endpoints = set(range(n))
+
         # Start with a random city
-        path = [rng.choice(cities)]
-        
-        # Greedily add the closest unvisited city
-        unvisited_cities = set(cities)
-        unvisited_cities.remove(path[0])
-        
-        while unvisited_cities:
-            current_city = path[-1]
-            closest_city = min(unvisited_cities, key=lambda city: problem.edge_cost(current_city, city))
-            path.append(closest_city)
-            unvisited_cities.remove(closest_city)
-        
-        return np.array(path)
-    
-    def local_refine(self, problem, tour, rng):
-        # Local 2-opt refinement
-        for _ in range(len(tour) // 2):
-            i = rng.integers(0, len(tour) - 1)
-            j = rng.integers(0, len(tour) - 1)
-            if i > j:
-                i, j = j, i
-            if i < j - 1:
-                new_tour = np.concatenate((tour[:i], tour[i:j][::-1], tour[j:]))
-                if self.tour_cost(problem, new_tour) < self.tour_cost(problem, tour):
-                    tour = new_tour
-        
+        current_city = rng.integers(n)
+        tour.append(current_city)
+        open_endpoints.remove(current_city)
+
+        # Initialize a list to store the fragments
+        fragments = [[current_city]]
+
+        # Grow the tour by adding fragments and bridging endpoints
+        while len(tour) < n:
+            # Find the closest unvisited city to each endpoint
+            closest_cities = []
+            for fragment in fragments:
+                min_distance = np.inf
+                closest_city = None
+                for city in open_endpoints:
+                    distance = problem.edge_cost(fragment[-1], city)
+                    if distance < min_distance:
+                        min_distance = distance
+                        closest_city = city
+                closest_cities.append(closest_city)
+
+            # Find the endpoint with the closest unvisited city
+            min_distance = np.inf
+            next_fragment_index = None
+            next_city = None
+            for i, (closest_city, fragment) in enumerate(zip(closest_cities, fragments)):
+                distance = problem.edge_cost(fragment[-1], closest_city)
+                if distance < min_distance:
+                    min_distance = distance
+                    next_fragment_index = i
+                    next_city = closest_city
+
+            # Add the next city to the corresponding fragment and remove it from the open endpoints
+            fragments[next_fragment_index].append(next_city)
+            open_endpoints.remove(next_city)
+
+            # Check if the fragment is complete
+            if len(fragments[next_fragment_index]) > 1 and next_city in [fragment[0] for fragment in fragments]:
+                # Remove the fragment from the list of open endpoints
+                fragments.pop(next_fragment_index)
+
+            # Update the tour
+            tour = [city for fragment in fragments for city in fragment]
+
+            # Introduce a risk-awareness mechanism to avoid sub-tours
+            if len(fragments) > 1:
+                # Find the fragment with the fewest cities
+                min_length = np.inf
+                min_fragment_index = None
+                for i, fragment in enumerate(fragments):
+                    if len(fragment) < min_length:
+                        min_length = len(fragment)
+                        min_fragment_index = i
+
+                # Merge the smallest fragment with the largest fragment
+                max_length = 0
+                max_fragment_index = None
+                for i, fragment in enumerate(fragments):
+                    if len(fragment) > max_length:
+                        max_length = len(fragment)
+                        max_fragment_index = i
+
+                # Merge the fragments
+                fragments[max_fragment_index].extend(fragments[min_fragment_index])
+                fragments.pop(min_fragment_index)
+
         return tour
-    
-    def tour_cost(self, problem, tour):
-        cost = 0
-        for i in range(len(tour) - 1):
-            cost += problem.edge_cost(tour[i], tour[i + 1])
-        return cost

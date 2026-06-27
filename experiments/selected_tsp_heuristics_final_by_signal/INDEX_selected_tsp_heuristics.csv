@@ -2,19 +2,17 @@ report_id,signal_category,selection_folder,method_card,method_family,code_file,r
 D1,distance_only,D1,TSP-D1,multi-start nearest-neighbour construction without cleanup,D1_heuristic.py,distance_only/D1_heuristic.py,True,False
 D1a,distance_only,D1a,TSP-D1a,nearest-neighbour construction with 2-opt local improvement,D1a_heuristic.py,distance_only/D1a_heuristic.py,True,False
 D2,distance_only,D2,TSP-D2,convex-hull outside-in insertion,D2_heuristic.py,distance_only/D2_heuristic.py,True,False
-D2a,distance_only,D2a,TSP-D2a,convex-hull outside-in insertion with bounded cleanup,D2a_heuristic.py,distance_only/D2a_heuristic.py,True,False
-D3,distance_only,D3,TSP-D3,grid/sector decomposition with endpoint bridging,D3_heuristic.py,distance_only/D3_heuristic.py,True,False
-D4,distance_only,D4,TSP-D4,Voronoi-style regional construction,D4_heuristic.py,distance_only/D4_heuristic.py,True,False
-D5,distance_only,D5,TSP-D5,convex-hull insertion with heavier repair,D5_heuristic.py,distance_only/D5_heuristic.py,True,False
-D6,distance_only,D6,TSP-D6,fast convex-hull insertion variant,D6_heuristic.py,distance_only/D6_heuristic.py,True,False
-D7,distance_only,D7,TSP-D7,distance-stabilized nearest-neighbour constructor,D7_heuristic.py,distance_only/D7_heuristic.py,True,False
-D8,distance_only,D8,TSP-D8,randomized-start nearest-endpoint path constructor,D8_heuristic.py,distance_only/D8_heuristic.py,True,False
-D9,distance_only,D9,TSP-D9,pseudo-MST nearest-neighbour scaffold with weak cleanup,D9_heuristic.py,distance_only/D9_heuristic.py,True,False
-D10,distance_only,D10,TSP-D10,cluster-based decomposition with local tours and bridge selection,D10_heuristic.py,distance_only/D10_heuristic.py,False,False
-D11,distance_only,D11,TSP-D11,spectral-projection partitioning with local paths and randomized cleanup,D11_heuristic.py,distance_only/D11_heuristic.py,False,False
-D12,distance_only,D12,TSP-D12,sparse geometric graph approximation attempt,D12_heuristic.py,distance_only/D12_heuristic.py,False,True
-D13,distance_only,D13,TSP-D13,region growth with endpoint bridging,D13_heuristic.py,distance_only/D13_heuristic.py,False,False
-D14,distance_only,D14,TSP-D14,polar-angle sweep construction,D14_heuristic.py,distance_only/D14_heuristic.py,False,False
+D2a,distance_only,D2a,TSP-D2a,convex-hull outside-in insertion with repair,D2a_heuristic.py,distance_only/D2a_heuristic.py,True,False
+D3,distance_only,D3,TSP-D3,grid/sector decomposition with endpoint bridging and 2-opt improvement,D3_heuristic.py,distance_only/D3_heuristic.py,True,False
+D4,distance_only,D4,TSP-D4,Voronoi-style regional construction without post-construction improvement,D4_heuristic.py,distance_only/D4_heuristic.py,True,False
+D5,distance_only,D5,TSP-D5,distance-stabilized nearest-neighbour constructor,D5_heuristic.py,distance_only/D5_heuristic.py,True,False
+D6,distance_only,D6,TSP-D6,randomized-start nearest-endpoint path constructor,D6_heuristic.py,distance_only/D6_heuristic.py,True,False
+D7,distance_only,D7,TSP-D7,pseudo-MST nearest-neighbour scaffold with weak cleanup,D7_heuristic.py,distance_only/D7_heuristic.py,True,False
+D8,distance_only,D8,TSP-D8,cluster-based decomposition with local tours and bridge selection,D8_heuristic.py,distance_only/D8_heuristic.py,False,False
+D9,distance_only,D9,TSP-D9,spectral-projection partitioning with local paths and randomized cleanup,D9_heuristic.py,distance_only/D9_heuristic.py,False,False
+D10,distance_only,D10,TSP-D10,sparse geometric graph approximation attempt,D10_heuristic.py,distance_only/D10_heuristic.py,False,True
+D11,distance_only,D11,TSP-D11,region growth with endpoint bridging,D11_heuristic.py,distance_only/D11_heuristic.py,False,False
+D12,distance_only,D12,TSP-D12,polar-angle sweep construction,D12_heuristic.py,distance_only/D12_heuristic.py,False,False
 C1,candidate_list,C1,TSP-C1,candidate-list nearest-neighbour constructor,C1_heuristic.py,candidate_list/C1_heuristic.py,True,False
 C1a,candidate_list,C1a,TSP-C1a,candidate-list construction with adaptive cleanup,C1a_heuristic.py,candidate_list/C1a_heuristic.py,True,False
 P1,edge_prior,P1,TSP-P1,quality-oriented prior-guided policy,P1_heuristic.py,edge_prior/P1_heuristic.py,True,False

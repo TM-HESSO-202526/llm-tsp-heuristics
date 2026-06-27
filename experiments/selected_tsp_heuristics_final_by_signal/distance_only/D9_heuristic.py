@@ -1,107 +1,78 @@
 import numpy as np
-import math
 
 class TSPHeuristic:
     def __call__(self, problem, rng=None):
-        # Initialize the random number generator if not provided
         if rng is None:
             rng = np.random.default_rng()
-
-        # Initialize the number of cities
+        
+        # Number of cities
         n = problem.n
-
-        # Initialize a set to keep track of visited cities
-        visited = set()
-
-        # Initialize the current city
-        current_city = 0
-
-        # Add the current city to the visited set
-        visited.add(current_city)
-
-        # Initialize the tour
-        tour = [current_city]
-
-        # Initialize the minimum spanning tree
-        mst = {}
-
-        # Create a list of all cities
-        cities = list(range(n))
-
-        # While not all cities have been visited
-        while len(visited) < n:
-            # Initialize the minimum cost and next city
-            min_cost = float('inf')
-            next_city = None
-
-            # For each unvisited city
-            for city in cities:
-                # If the city has not been visited
-                if city not in visited:
-                    # Calculate the cost of traveling from the current city to the city
-                    cost = problem.edge_cost(current_city, city)
-
-                    # If the cost is less than the minimum cost
-                    if cost < min_cost:
-                        # Update the minimum cost and next city
-                        min_cost = cost
-                        next_city = city
-
-            # Add the next city to the tour and the visited set
-            tour.append(next_city)
-            visited.add(next_city)
-
-            # Update the current city
-            current_city = next_city
-
-            # Add the edge to the minimum spanning tree
-            if current_city not in mst:
-                mst[current_city] = []
-            mst[current_city].append(tour[-2])  # Store the edge in both directions
-            if tour[-2] not in mst:
-                mst[tour[-2]] = []
-            mst[tour[-2]].append(current_city)
-
-        # Convert the minimum spanning tree into a Hamiltonian tour
-        # Start at the first city in the tour
-        current_city = tour[0]
-
-        # Initialize the Hamiltonian tour
-        hamiltonian_tour = [current_city]
-
-        # While not all cities have been visited in the Hamiltonian tour
-        while len(hamiltonian_tour) < n:
-            # Get the list of neighboring cities that have not been visited yet
-            unvisited_neighbors = [neighbor for neighbor in mst.get(current_city, []) if neighbor not in hamiltonian_tour]
-
-            # If there are unvisited neighbors
-            if unvisited_neighbors:
-                # Choose the closest unvisited neighbor
-                next_city = min(unvisited_neighbors, key=lambda neighbor: problem.edge_cost(current_city, neighbor))
-
-                # Add the next city to the Hamiltonian tour
-                hamiltonian_tour.append(next_city)
-
-                # Update the current city
-                current_city = next_city
-            else:
-                # If there are no unvisited neighbors, choose the closest unvisited city
-                unvisited_cities = [city for city in range(n) if city not in hamiltonian_tour]
-                next_city = min(unvisited_cities, key=lambda city: problem.edge_cost(current_city, city))
-
-                # Add the next city to the Hamiltonian tour
-                hamiltonian_tour.append(next_city)
-
-                # Update the current city
-                current_city = next_city
-
-        # Perform a bounded 2-opt cleanup with more iterations and a better selection strategy
-        for _ in range(int(n * 0.2)):  # Increase the number of iterations
-            i = rng.integers(1, n - 1)  # Avoid swapping the first city
-            j = rng.integers(i + 1, n)
-            # Check if the 2-opt swap improves the tour
-            if problem.edge_cost(hamiltonian_tour[i - 1], hamiltonian_tour[j]) + problem.edge_cost(hamiltonian_tour[i], hamiltonian_tour[j - 1]) < problem.edge_cost(hamiltonian_tour[i - 1], hamiltonian_tour[i]) + problem.edge_cost(hamiltonian_tour[j - 1], hamiltonian_tour[j]):
-                # Perform the 2-opt swap
-                hamiltonian_tour[i:j] = hamiltonian_tour[i:j][::-1]
-
-        return np.array(hamiltonian_tour)
+        
+        # City coordinates
+        coords = problem.coords
+        
+        # Dimensionality of the coordinates
+        dim = coords.shape[1]
+        
+        # Project coordinates onto a random line
+        num_projections = 5
+        lines = rng.standard_normal((num_projections, dim))
+        lines = lines / np.linalg.norm(lines, axis=1, keepdims=True)
+        projections = np.dot(coords, lines.T)
+        
+        # Sort cities by their projections and select the best split
+        best_split = None
+        best_cost = np.inf
+        for i in range(num_projections):
+            sorted_indices = np.argsort(projections[:, i])
+            mid = n // 2
+            left_half = sorted_indices[:mid]
+            right_half = sorted_indices[mid:]
+            left_path = self.build_path(problem, left_half, rng)
+            right_path = self.build_path(problem, right_half, rng)
+            tour = np.concatenate((left_path, right_path))
+            cost = self.tour_cost(problem, tour)
+            if cost < best_cost:
+                best_cost = cost
+                best_split = tour
+        
+        # Local refining
+        best_split = self.local_refine(problem, best_split, rng)
+        
+        return best_split
+    
+    def build_path(self, problem, cities, rng):
+        # Start with a random city
+        path = [rng.choice(cities)]
+        
+        # Greedily add the closest unvisited city
+        unvisited_cities = set(cities)
+        unvisited_cities.remove(path[0])
+        
+        while unvisited_cities:
+            current_city = path[-1]
+            closest_city = min(unvisited_cities, key=lambda city: problem.edge_cost(current_city, city))
+            path.append(closest_city)
+            unvisited_cities.remove(closest_city)
+        
+        return np.array(path)
+    
+    def local_refine(self, problem, tour, rng):
+        # Local 2-opt refinement
+        for _ in range(len(tour) // 2):
+            i = rng.integers(0, len(tour) - 1)
+            j = rng.integers(0, len(tour) - 1)
+            if i > j:
+                i, j = j, i
+            if i < j - 1:
+                new_tour = np.concatenate((tour[:i], tour[i:j][::-1], tour[j:]))
+                if self.tour_cost(problem, new_tour) < self.tour_cost(problem, tour):
+                    tour = new_tour
+        
+        return tour
+    
+    def tour_cost(self, problem, tour):
+        cost = 0
+        for i in range(len(tour) - 1):
+            cost += problem.edge_cost(tour[i], tour[i + 1])
+        return cost
